@@ -31,7 +31,7 @@ use crate::{
 };
 use codec::Decode;
 use sp_core::sandbox as sandbox_primitives;
-use sp_wasm_interface::{FunctionContext, Pointer, WordSize};
+use sp_wasm_interface::{FunctionContext, Pointer, WordSize, Value};
 use std::{collections::HashMap, rc::Rc};
 
 #[cfg(feature = "wasmer-sandbox")]
@@ -164,6 +164,29 @@ enum BackendInstance {
 	Wasmer(wasmer::Instance),
 }
 
+trait Backend {
+	/// Instantiate a module within a sandbox context
+	fn instantiate(
+		wasm: &[u8],
+		guest_env: GuestEnvironment,
+		state: u32,
+		sandbox_context: &mut dyn SandboxContext,
+	) -> std::result::Result<BackendInstance, InstantiationError>;
+
+	/// Invoke a function within a sandboxed module
+	fn invoke(
+		instance: &SandboxInstance,
+		module: &wasmi::ModuleRef,
+		export_name: &str,
+		args: &[Value],
+		state: u32,
+		sandbox_context: &mut dyn SandboxContext,
+	) -> std::result::Result<Option<Value>, error::Error>;
+
+	/// Allocate new memory region
+	fn new_memory(initial: u32, maximum: Option<u32>) -> error::Result<Memory>;
+}
+
 /// Sandboxed instance of a wasm module.
 ///
 /// It's primary purpose is to [`invoke`] exported functions on it.
@@ -221,8 +244,6 @@ impl SandboxInstance {
 
 			#[cfg(feature = "wasmer-sandbox")]
 			BackendInstance::Wasmer(wasmer_instance) => {
-				use sp_wasm_interface::Value;
-
 				let global = wasmer_instance.exports.get_global(name).ok()?;
 				let wasmtime_value = match global.get() {
 					wasmer::Val::I32(val) => Value::I32(val),
