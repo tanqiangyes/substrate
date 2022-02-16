@@ -44,10 +44,12 @@ fn colorize_info_message(message: &str) -> String {
 }
 
 /// Holds the path to the bloaty WASM binary.
+/// 保存臃肿的 WASM 二进制文件的路径。
 pub struct WasmBinaryBloaty(PathBuf);
 
 impl WasmBinaryBloaty {
 	/// Returns the escaped path to the bloaty wasm binary.
+	/// 返回到臃肿的 wasm 二进制文件的转义路径。
 	pub fn wasm_binary_bloaty_path_escaped(&self) -> String {
 		self.0.display().to_string().escape_default().to_string()
 	}
@@ -101,10 +103,11 @@ fn crate_metadata(cargo_manifest: &Path) -> Metadata {
 }
 
 /// Creates the WASM project, compiles the WASM binary and compacts the WASM binary.
-///
+/// 创建 WASM 项目，编译 WASM 二进制文件并压缩 WASM 二进制文件。
 /// # Returns
 ///
 /// The path to the compact WASM binary and the bloaty WASM binary.
+/// 紧凑的 WASM 二进制文件和臃肿的 WASM 二进制文件的路径。
 pub(crate) fn create_and_compile(
 	project_cargo_toml: &Path,
 	default_rustflags: &str,
@@ -323,6 +326,7 @@ fn create_project_cargo_toml(
 /// Find a package by the given `manifest_path` in the metadata.
 ///
 /// Panics if the package could not be found.
+/// 通过元数据中给定的 `manifest_path` 查找包。如果找不到包裹，会感到恐慌。
 fn find_package_by_manifest_path<'a>(
 	manifest_path: &Path,
 	crate_metadata: &'a cargo_metadata::Metadata,
@@ -335,6 +339,7 @@ fn find_package_by_manifest_path<'a>(
 }
 
 /// Get a list of enabled features for the project.
+/// 获取项目启用的功能列表。
 fn project_enabled_features(
 	cargo_manifest: &Path,
 	crate_metadata: &cargo_metadata::Metadata,
@@ -390,10 +395,11 @@ fn has_runtime_wasm_feature_declared(
 }
 
 /// Create the project used to build the wasm binary.
-///
+/// 创建一个项目，用来构建wasm 二进制。
 /// # Returns
 ///
 /// The path to the created wasm project.
+/// 返回wasm项目的路径。
 fn create_project(
 	project_cargo_toml: &Path,
 	wasm_workspace: &Path,
@@ -401,7 +407,7 @@ fn create_project(
 	workspace_root_path: &Path,
 	features_to_enable: Vec<String>,
 ) -> PathBuf {
-	let crate_name = get_crate_name(project_cargo_toml);
+	let crate_name = get_crate_name(project_cargo_toml);//获取包名称
 	let crate_path = project_cargo_toml.parent().expect("Parent path exists; qed");
 	let wasm_binary = get_wasm_binary_name(project_cargo_toml);
 	let wasm_project_folder = wasm_workspace.join(&crate_name);
@@ -597,6 +603,7 @@ fn build_project(
 }
 
 /// Compact the WASM binary using `wasm-gc` and compress it using zstd.
+/// 使用 `wasm-gc` 压缩 WASM 二进制文件并使用 zstd 压缩它。
 fn compact_wasm_file(
 	project: &Path,
 	profile: Profile,

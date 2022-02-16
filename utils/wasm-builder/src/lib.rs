@@ -148,6 +148,7 @@ const FORCE_WASM_BUILD_ENV: &str = "FORCE_WASM_BUILD";
 const WASM_BUILD_WORKSPACE_HINT: &str = "WASM_BUILD_WORKSPACE_HINT";
 
 /// Write to the given `file` if the `content` is different.
+/// 如果给定的内容不同，则写入给定的文件中
 fn write_file_if_changed(file: impl AsRef<Path>, content: impl AsRef<str>) {
 	if fs::read_to_string(file.as_ref()).ok().as_deref() != Some(content.as_ref()) {
 		fs::write(file.as_ref(), content.as_ref())
@@ -156,6 +157,7 @@ fn write_file_if_changed(file: impl AsRef<Path>, content: impl AsRef<str>) {
 }
 
 /// Copy `src` to `dst` if the `dst` does not exist or is different.
+/// 内容不同，则复制内容到指定的文件
 fn copy_file_if_changed(src: PathBuf, dst: PathBuf) {
 	let src_file = fs::read_to_string(&src).ok();
 	let dst_file = fs::read_to_string(&dst).ok();
@@ -168,6 +170,7 @@ fn copy_file_if_changed(src: PathBuf, dst: PathBuf) {
 }
 
 /// Get a cargo command that compiles with nightly
+/// 获取一个cargo命令行，由nightly版本编译
 fn get_nightly_cargo() -> CargoCommand {
 	let env_cargo =
 		CargoCommand::new(&env::var("CARGO").expect("`CARGO` env variable is always set by cargo"));
@@ -219,6 +222,7 @@ fn get_rustup_nightly(selected: Option<String>) -> Option<CargoCommand> {
 }
 
 /// Wraps a specific command which represents a cargo invocation.
+/// 包装代表cargo调用的特定命令。
 #[derive(Debug)]
 struct CargoCommand {
 	program: String,
