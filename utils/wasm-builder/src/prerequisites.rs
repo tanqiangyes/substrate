@@ -34,6 +34,7 @@ fn print_error_message(message: &str) -> String {
 /// Checks that all prerequisites are installed.
 ///
 /// Returns the versioned cargo command on success.
+/// 检查是否安装了所有先决条件。成功时返回版本化的 cargo 命令。
 pub(crate) fn check() -> Result<CargoCommandVersioned, String> {
 	let cargo_command = crate::get_nightly_cargo();
 
