@@ -21,6 +21,8 @@ use syn::spanned::Spanned;
 ///
 /// * Generate enum call and implement various trait on it.
 /// * Implement Callable and call_function on `Pallet`
+/// 生成枚举调用并在其上实现各种特征。
+/// 在 `Pallet` 上实现 Callable 和 call_function
 pub fn expand_call(def: &mut Def) -> proc_macro2::TokenStream {
 	let (span, where_clause, methods, docs) = match def.call.as_ref() {
 		Some(call) => {

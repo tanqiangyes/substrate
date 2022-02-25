@@ -15,7 +15,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Lowest-abstraction level for the Substrate runtime: just exports useful primitives from std
+//! lowest-abstraction level for the substrate runtime: just exports useful primitives from std
 //! or client/alloc to be used with any code that depends on the runtime.
 
 #![cfg_attr(not(feature = "std"), no_std)]
