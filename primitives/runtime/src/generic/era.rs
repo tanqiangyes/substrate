@@ -28,11 +28,13 @@ pub type Period = u64;
 /// Era phase
 pub type Phase = u64;
 
-/// An era to describe the longevity of a transaction.
+/// An  to describe the longevity of a transaction.
+/// Era描述交易的寿命。
 #[derive(PartialEq, Eq, Clone, Copy, sp_core::RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum Era {
 	/// The transaction is valid forever. The genesis hash must be present in the signed content.
+	/// 交易永远有效。创世哈希必须存在于签名内容中。
 	Immortal,
 
 	/// Period and phase are encoded:
@@ -41,9 +43,13 @@ pub enum Era {
 	/// implies which block hash is included in the signature material). If the `period` is
 	/// greater than 1 << 12, then it will be a factor of the times greater than 1<<12 that
 	/// `period` is.
-	///
+	///	周期和阶段被编码：
+	/// - 从签名材料中的区块哈希中获取有效期。
+	/// - 该交易生命周期开始的阶段（重要的是，暗示签名材料中包含哪个区块哈希）。
+	/// 如果 `period` 大于 1 << 12，那么 `period` 是大于 1<<12 的倍数。
 	/// When used on `FRAME`-based runtimes, `period` cannot exceed `BlockHashCount` parameter
 	/// of `system` module.
+	/// 在基于 `FRAME` 的运行时使用时，`period` 不能超过 `system` 模块的 `BlockHashCount` 参数。
 	Mortal(Period, Phase),
 }
 
@@ -58,10 +64,11 @@ impl Era {
 	/// Create a new era based on a period (which should be a power of two between 4 and 65536
 	/// inclusive) and a block number on which it should start (or, for long periods, be shortly
 	/// after the start).
-	///
+	/// 根据一个周期（应该是 4 到 65536 之间的 2 的幂）和它应该开始的区块号（或者，对于很长一段时间，在开始后不久）创建一个新时代。
 	/// If using `Era` in the context of `FRAME` runtime, make sure that `period`
 	/// does not exceed `BlockHashCount` parameter passed to `system` module, since that
 	/// prunes old blocks and renders transactions immediately invalid.
+	/// 如果在 `FRAME` 运行时的上下文中使用`Era`，请确保`period` 不超过传递给`system` 模块的`BlockHashCount` 参数，因为这会修剪旧块并使交易立即无效。
 	pub fn mortal(period: u64, current: u64) -> Self {
 		let period = period.checked_next_power_of_two().unwrap_or(1 << 16).max(4).min(1 << 16);
 		let phase = current % period;
@@ -83,6 +90,7 @@ impl Era {
 
 	/// Get the block number of the start of the era whose properties this object
 	/// describes that `current` belongs to.
+	/// 获取该对象描述 `current` 所属的时代开始的区块号。
 	pub fn birth(self, current: u64) -> u64 {
 		match self {
 			Self::Immortal => 0,
@@ -91,6 +99,7 @@ impl Era {
 	}
 
 	/// Get the block number of the first block at which the era has ended.
+	/// 获取时代结束的第一个区块的区块号。
 	pub fn death(self, current: u64) -> u64 {
 		match self {
 			Self::Immortal => u64::MAX,
@@ -135,8 +144,9 @@ impl Decode for Era {
 }
 
 /// Add Mortal{N}(u8) variants with the given indices, to describe custom encoding.
+/// 添加具有给定索引的 Mortal{N}(u8) 变体，以描述自定义编码。
 macro_rules! mortal_variants {
-    ($variants:ident, $($index:literal),* ) => {
+    ($variants:ident, $($index:literal),* ) => {//函数名   类型  最终构造出 variants
 		$variants
 		$(
 			.variant(concat!(stringify!(Mortal), stringify!($index)), |v| v
@@ -155,6 +165,7 @@ impl scale_info::TypeInfo for Era {
 
 		// this is necessary since the size of the encoded Mortal variant is `u16`, conditional on
 		// the value of the first byte being > 0.
+		// 这是必要的，因为编码的 Mortal 变体的大小是 `u16`，条件是第一个字节的值 > 0。
 		let variants = mortal_variants!(
 			variants, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
 			22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,

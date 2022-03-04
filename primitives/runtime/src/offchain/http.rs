@@ -16,13 +16,14 @@
 // limitations under the License.
 
 //! A high-level helpers for making HTTP requests from Offchain Workers.
-//!
+//! 用于从 Offchain Workers 发出 HTTP 请求的高级助手。
 //! `sp-io` crate exposes a low level methods to make and control HTTP requests
 //! available only for Offchain Workers. Those might be hard to use
 //! and usually that level of control is not really necessary.
 //! This module aims to provide high-level wrappers for those APIs
 //! to simplify making HTTP requests.
-//!
+//! `sp-io` crate提供了一个低级别的方法，用于提出和控制HTTP请求，仅适用于Offchain Workers。
+//! 这些方法可能很难使用，而且通常这种程度的控制并不是真的需要。本模块的目的是为这些API提供高级封装，以简化HTTP请求。
 //!
 //! Example:
 //! ```rust,no_run

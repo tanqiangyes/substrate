@@ -20,14 +20,18 @@ use sp_core::RuntimeDebug;
 use sp_std::vec::Vec;
 
 /// A string that wraps a `&'static str` in the runtime and `String`/`Vec<u8>` on decode.
+/// 一个字符串，它在运行时包装了一个`&'static str`，在解码时包装了一个`String`/`Vec<u8>`。
 #[derive(Eq, RuntimeDebug, Clone)]
 pub enum RuntimeString {
 	/// The borrowed mode that wraps a `&'static str`.
+	/// 包装 `&'static str` 的借用模式。
 	Borrowed(&'static str),
 	/// The owned mode that wraps a `String`.
+	/// 包装“String”的拥有模式。
 	#[cfg(feature = "std")]
 	Owned(String),
 	/// The owned mode that wraps a `Vec<u8>`.
+	/// 包装 `Vec<u8>` 的拥有模式。
 	#[cfg(not(feature = "std"))]
 	Owned(Vec<u8>),
 }
@@ -41,6 +45,7 @@ impl scale_info::TypeInfo for RuntimeString {
 }
 
 /// Convenience macro to use the format! interface to get a `RuntimeString::Owned`
+/// 方便宏使用format！获取`RuntimeString::Owned`的接口
 #[macro_export]
 macro_rules! format_runtime_string {
 	($($args:tt)*) => {{
@@ -147,6 +152,7 @@ impl<'de> serde::Deserialize<'de> for RuntimeString {
 }
 
 /// Create a const [`RuntimeString`].
+/// 创建一个 const [`RuntimeString`]。
 #[macro_export]
 macro_rules! create_runtime_str {
 	( $y:expr ) => {{

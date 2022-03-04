@@ -163,13 +163,16 @@ pub struct StorageChild {
 }
 
 /// Struct containing data needed for a storage.
+/// 包含存储所需数据的结构。
 #[cfg(feature = "std")]
 #[derive(Default, Debug, Clone)]
 pub struct Storage {
 	/// Top trie storage data.
+	/// Top trie 存储数据。
 	pub top: StorageMap,
 	/// Children trie storage data. Key does not include prefix, only for the `default` trie kind,
 	/// of `ChildType::ParentKeyId` type.
+	/// 子树存储数据。键不包含前缀，仅适用于 `ChildType::ParentKeyId` 类型的 `default` trie 类型。
 	pub children_default: std::collections::HashMap<Vec<u8>, StorageChild>,
 }
 

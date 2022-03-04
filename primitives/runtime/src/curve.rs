@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Provides some utilities to define a piecewise linear function.
+//! 提供一些实用程序来定义分段线性函数
 
 use crate::{
 	traits::{AtLeast32BitUnsigned, SaturatedConversion},
@@ -24,11 +25,14 @@ use crate::{
 use core::ops::Sub;
 
 /// Piecewise Linear function in [0, 1] -> [0, 1].
+/// [0, 1] -> [0, 1] 中的分段线性函数。
 #[derive(PartialEq, Eq, sp_core::RuntimeDebug, scale_info::TypeInfo)]
 pub struct PiecewiseLinear<'a> {
 	/// Array of points. Must be in order from the lowest abscissas to the highest.
+	/// 点数组。必须按从最低横坐标到最高的顺序。
 	pub points: &'a [(Perbill, Perbill)],
 	/// The maximum value that can be returned.
+	/// 可以返回的最大值。
 	pub maximum: Perbill,
 }
 
@@ -38,6 +42,7 @@ fn abs_sub<N: Ord + Sub<Output = N> + Clone>(a: N, b: N) -> N where {
 
 impl<'a> PiecewiseLinear<'a> {
 	/// Compute `f(n/d)*d` with `n <= d`. This is useful to avoid loss of precision.
+	/// 用 `n <= d` 计算 `f(n/d)*d`。这对于避免精度损失很有用。
 	pub fn calculate_for_fraction_times_denominator<N>(&self, n: N, d: N) -> N
 	where
 		N: AtLeast32BitUnsigned + Clone,
