@@ -16,19 +16,21 @@
 // limitations under the License.
 
 //! A logger that can be used to log from the runtime.
-//!
+//! 用于从运行时记录的记录器。
 //! See [`RuntimeLogger`] for more docs.
-
+//！ 查看 [`RuntimeLogger`] 获得更多文档
 /// Runtime logger implementation - `log` crate backend.
-///
+/// 运行时记录器实现 - `log` crate 后端。
 /// The logger should be initialized if you want to display
 /// logs inside the runtime that is not necessarily running natively.
+/// 如果您想在运行时内显示不一定在本机运行的日志，则应初始化记录器。
 pub struct RuntimeLogger;
 
 impl RuntimeLogger {
 	/// Initialize the logger.
-	///
+	/// 初始化记录器。
 	/// This is a no-op when running natively (`std`).
+	/// 本机运行（`std`）时，这是一个空操作。
 	#[cfg(feature = "std")]
 	pub fn init() {}
 
@@ -49,6 +51,7 @@ impl log::Log for RuntimeLogger {
 	fn enabled(&self, _: &log::Metadata) -> bool {
 		// The final filtering is done by the host. This is not perfect, as we would still call into
 		// the host for log lines that will be thrown away.
+		// 最终过滤由主机完成。这并不完美，因为我们仍然会调用主机以获取将被丢弃的日志行。
 		true
 	}
 

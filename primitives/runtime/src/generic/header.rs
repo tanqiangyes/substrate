@@ -32,12 +32,14 @@ use sp_core::U256;
 use sp_std::{convert::TryFrom, fmt::Debug};
 
 /// Abstraction over a block header for a substrate chain.
+/// 对底层链的块头进行抽象。
 #[derive(Encode, Decode, PartialEq, Eq, Clone, sp_core::RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "std", serde(deny_unknown_fields))]
 pub struct Header<Number: Copy + Into<U256> + TryFrom<U256>, Hash: HashT> {
 	/// The parent hash.
+	/// 父hash
 	pub parent_hash: Hash::Output,
 	/// The block number.
 	#[cfg_attr(
@@ -47,10 +49,13 @@ pub struct Header<Number: Copy + Into<U256> + TryFrom<U256>, Hash: HashT> {
 	#[codec(compact)]
 	pub number: Number,
 	/// The state trie merkle root
+	/// 状态默克尔树根
 	pub state_root: Hash::Output,
 	/// The merkle root of the extrinsics.
+	/// 额外的数据的默克尔树根
 	pub extrinsics_root: Hash::Output,
 	/// A chain-specific digest of data useful for light clients or referencing auxiliary data.
+	/// 对轻客户端或引用辅助数据有用的特定链数据摘要。
 	pub digest: Digest,
 }
 
@@ -187,6 +192,7 @@ where
 {
 	/// Convenience helper for computing the hash of the header without having
 	/// to import the trait.
+	/// 无需导入特征即可计算标头哈希的便捷助手。
 	pub fn hash(&self) -> Hash::Output {
 		Hash::hash_of(self)
 	}
