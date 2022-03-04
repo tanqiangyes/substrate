@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Generic implementation of an unchecked (pre-verification) extrinsic.
+//! 未检查（预验证）交易的通用实现。
 
 use crate::{
 	generic::CheckedExtrinsic,
@@ -32,14 +33,16 @@ use sp_io::hashing::blake2_256;
 use sp_std::{fmt, prelude::*};
 
 /// Current version of the [`UncheckedExtrinsic`] encoded format.
-///
+/// [`UncheckedExtrinsic`] 编码格式的当前版本。
 /// This version needs to be bumped if the encoded representation changes.
 /// It ensures that if the representation is changed and the format is not known,
 /// the decoding fails.
+/// 如果编码表示发生变化，则需要更改此版本。它确保如果表示更改并且格式未知，则解码失败。
 const EXTRINSIC_FORMAT_VERSION: u8 = 4;
 
 /// A extrinsic right from the external world. This is unchecked and so
 /// can contain a signature.
+/// 来自外部世界的外在权利。这是未选中的，因此可以包含签名。
 #[derive(PartialEq, Eq, Clone)]
 pub struct UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
@@ -48,6 +51,7 @@ where
 	/// The signature, address, number of extrinsics have come before from
 	/// the same signer and an era describing the longevity of this transaction,
 	/// if this is a signed extrinsic.
+	/// 签名、地址、外部数据的数量来自同一签名者和描述此交易寿命的时代（如果这是已签名的外部数据）。
 	pub signature: Option<(Address, Signature, Extra)>,
 	/// The function that should be called.
 	pub function: Call,
@@ -55,8 +59,9 @@ where
 
 /// Manual [`TypeInfo`] implementation because of custom encoding. The data is a valid encoded
 /// `Vec<u8>`, but requires some logic to extract the signature and payload.
-///
+/// 由于自定义编码，手动 [`TypeInfo`] 实现。数据是一个有效的编码 `Vec<u8>`，但需要一些逻辑来提取签名和有效负载。
 /// See [`UncheckedExtrinsic::encode`] and [`UncheckedExtrinsic::decode`].
+/// 请参阅 [`UncheckedExtrinsic::encode`] 和 [`UncheckedExtrinsic::decode`]。
 impl<Address, Call, Signature, Extra> TypeInfo
 	for UncheckedExtrinsic<Address, Call, Signature, Extra>
 where
@@ -73,6 +78,7 @@ where
 			// Include the type parameter types, even though they are not used directly in any of
 			// the described fields. These type definitions can be used by downstream consumers
 			// to help construct the custom decoding from the opaque bytes (see below).
+			// 包括类型参数类型，即使它们没有直接用于任何描述的字段。下游消费者可以使用这些类型定义来帮助从不透明字节构建自定义解码（见下文）
 			.type_params(vec![
 				TypeParameter::new("Address", Some(meta_type::<Address>())),
 				TypeParameter::new("Call", Some(meta_type::<Call>())),
@@ -83,6 +89,7 @@ where
 			// Because of the custom encoding, we can only accurately describe the encoding as an
 			// opaque `Vec<u8>`. Downstream consumers will need to manually implement the codec to
 			// encode/decode the `signature` and `function` fields.
+			// 由于自定义编码，我们只能将编码准确描述为不透明的`Vec<u8>`。下游消费者将需要手动实现编解码器来对“签名”和“功能”字段进行编码解码。
 			.composite(Fields::unnamed().field(|f| f.ty::<Vec<u8>>()))
 	}
 }
@@ -103,6 +110,7 @@ impl<Address, Call, Signature, Extra: SignedExtension>
 	UncheckedExtrinsic<Address, Call, Signature, Extra>
 {
 	/// New instance of a signed extrinsic aka "transaction".
+	/// 已签名的外部又名“交易”的新实例。
 	pub fn new_signed(function: Call, signed: Address, signature: Signature, extra: Extra) -> Self {
 		Self { signature: Some((signed, signature, extra)), function }
 	}
@@ -149,13 +157,13 @@ where
 	fn check(self, lookup: &Lookup) -> Result<Self::Checked, TransactionValidityError> {
 		Ok(match self.signature {
 			Some((signed, signature, extra)) => {
-				let signed = lookup.lookup(signed)?;
-				let raw_payload = SignedPayload::new(self.function, extra)?;
-				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) {
+				let signed = lookup.lookup(signed)?;//从签名获取accountId
+				let raw_payload = SignedPayload::new(self.function, extra)?;//构造
+				if !raw_payload.using_encoded(|payload| signature.verify(payload, &signed)) {//验证
 					return Err(InvalidTransaction::BadProof.into())
 				}
 
-				let (function, extra, _) = raw_payload.deconstruct();
+				let (function, extra, _) = raw_payload.deconstruct();//解出来
 				CheckedExtrinsic { signed: Some((signed, extra)), function }
 			},
 			None => CheckedExtrinsic { signed: None, function: self.function },
@@ -173,10 +181,11 @@ where
 }
 
 /// A payload that has been signed for an unchecked extrinsics.
-///
+/// 已为未经检查的外部对象签名的有效负载。
 /// Note that the payload that we sign to produce unchecked extrinsic signature
 /// is going to be different than the `SignaturePayload` - so the thing the extrinsic
 /// actually contains.
+/// 请注意，我们为生成未经检查的外部签名而签名的有效负载将与“SignaturePayload”不同 - 所以外部实际包含的东西。
 pub struct SignedPayload<Call, Extra: SignedExtension>((Call, Extra, Extra::AdditionalSigned));
 
 impl<Call, Extra> SignedPayload<Call, Extra>
@@ -187,6 +196,7 @@ where
 	/// Create new `SignedPayload`.
 	///
 	/// This function may fail if `additional_signed` of `Extra` is not available.
+	/// 如果 `Extra` 的 `additional_signed` 不可用，此函数可能会失败。
 	pub fn new(call: Call, extra: Extra) -> Result<Self, TransactionValidityError> {
 		let additional_signed = extra.additional_signed()?;
 		let raw_payload = (call, extra, additional_signed);
@@ -194,11 +204,13 @@ where
 	}
 
 	/// Create new `SignedPayload` from raw components.
+	/// 从raw组件中创建一个新的`SignedPayload`
 	pub fn from_raw(call: Call, extra: Extra, additional_signed: Extra::AdditionalSigned) -> Self {
 		Self((call, extra, additional_signed))
 	}
 
 	/// Deconstruct the payload into it's components.
+	/// 将有效负载解构为它的组件。
 	pub fn deconstruct(self) -> (Call, Extra, Extra::AdditionalSigned) {
 		self.0
 	}
@@ -210,8 +222,9 @@ where
 	Extra: SignedExtension,
 {
 	/// Get an encoded version of this payload.
-	///
+	/// 获取此有效负载的编码版本。
 	/// Payloads longer than 256 bytes are going to be `blake2_256`-hashed.
+	/// 超过 256 字节的有效负载将被 `blake2_256`-hashed。
 	fn using_encoded<R, F: FnOnce(&[u8]) -> R>(&self, f: F) -> R {
 		self.0.using_encoded(|payload| {
 			if payload.len() > 256 {
@@ -241,6 +254,7 @@ where
 		// This is a little more complicated than usual since the binary format must be compatible
 		// with SCALE's generic `Vec<u8>` type. Basically this just means accepting that there
 		// will be a prefix of vector length.
+		// 这比平常稍微复杂一点，因为二进制格式必须与 SCALE 的通用 `Vec<u8>` 类型兼容。基本上这只是意味着接受会有一个向量长度的前缀。
 		let expected_length: Compact<u32> = Decode::decode(input)?;
 		let before_length = input.remaining_len()?;
 
@@ -280,6 +294,7 @@ where
 		let mut tmp = Vec::with_capacity(sp_std::mem::size_of::<Self>());
 
 		// 1 byte version id.
+		// decode的时候，这里做了对应的处理
 		match self.signature.as_ref() {
 			Some(s) => {
 				tmp.push(EXTRINSIC_FORMAT_VERSION | 0b1000_0000);

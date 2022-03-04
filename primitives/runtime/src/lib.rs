@@ -98,29 +98,34 @@ pub use sp_arithmetic::{
 pub use either::Either;
 
 /// An abstraction over justification for a block's validity under a consensus algorithm.
-///
+/// 在共识算法下对区块有效性的合理性的抽象。
 /// Essentially a finality proof. The exact formulation will vary between consensus
 /// algorithms. In the case where there are multiple valid proofs, inclusion within
 /// the block itself would allow swapping justifications to change the block's hash
 /// (and thus fork the chain). Sending a `Justification` alongside a block instead
 /// bypasses this problem.
-///
+/// 本质上是最终性证明。确切的公式会因共识算法而异。在有多个有效证明的情况下，
+/// 包含在块本身中将允许交换理由以更改块的哈希（从而分叉链）。在块旁边发送一个 `Justification` 可以绕过这个问题。
 /// Each justification is provided as an encoded blob, and is tagged with an ID
 /// to identify the consensus engine that generated the proof (we might have
 /// multiple justifications from different engines for the same block).
+/// 每个理由都以编码 blob 的形式提供，并用 ID 标记以标识生成证明的共识引擎（我们可能有来自同一块的不同引擎的多个理由）。
 pub type Justification = (ConsensusEngineId, EncodedJustification);
 
 /// The encoded justification specific to a consensus engine.
+/// 特定于共识引擎的编码理由。
 pub type EncodedJustification = Vec<u8>;
 
 /// Collection of justifications for a given block, multiple justifications may
 /// be provided by different consensus engines for the same block.
+/// 给定区块的证明集合，不同的共识引擎可以为同一个区块提供多个证明。
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Debug, Clone, PartialEq, Eq, Encode, Decode)]
 pub struct Justifications(Vec<Justification>);
 
 impl Justifications {
 	/// Return an iterator over the justifications.
+	/// 返回证明的迭代器。
 	pub fn iter(&self) -> impl Iterator<Item = &Justification> {
 		self.0.iter()
 	}
@@ -128,6 +133,7 @@ impl Justifications {
 	/// Append a justification. Returns false if a justification with the same
 	/// `ConsensusEngineId` already exists, in which case the justification is
 	/// not inserted.
+	/// 附加证明。如果已经存在具有相同 `ConsensusEngineId` 的证明，则返回 false，在这种情况下，不插入证明。
 	pub fn append(&mut self, justification: Justification) -> bool {
 		if self.get(justification.0).is_some() {
 			return false
@@ -138,12 +144,14 @@ impl Justifications {
 
 	/// Return the encoded justification for the given consensus engine, if it
 	/// exists.
+	/// 返回给定共识引擎的编码证明（如果存在）。
 	pub fn get(&self, engine_id: ConsensusEngineId) -> Option<&EncodedJustification> {
 		self.iter().find(|j| j.0 == engine_id).map(|j| &j.1)
 	}
 
 	/// Return a copy of the encoded justification for the given consensus
 	/// engine, if it exists.
+	/// 返回一个给定共识引擎的复制编码证明（如果存在）
 	pub fn into_justification(self, engine_id: ConsensusEngineId) -> Option<EncodedJustification> {
 		self.into_iter().find(|j| j.0 == engine_id).map(|j| j.1)
 	}
@@ -171,22 +179,27 @@ use crate::traits::IdentifyAccount;
 pub use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 /// Complex storage builder stuff.
+/// 复杂的存储构建器的东西。
 #[cfg(feature = "std")]
 pub trait BuildStorage {
 	/// Build the storage out of this builder.
+	/// 使用此构建器构建存储。
 	fn build_storage(&self) -> Result<sp_core::storage::Storage, String> {
 		let mut storage = Default::default();
 		self.assimilate_storage(&mut storage)?;
 		Ok(storage)
 	}
 	/// Assimilate the storage for this module into pre-existing overlays.
+	/// 将此模块的存储同化到预先存在的数据中。
 	fn assimilate_storage(&self, storage: &mut sp_core::storage::Storage) -> Result<(), String>;
 }
 
 /// Something that can build the genesis storage of a module.
+/// 可以构建模块的创世存储的东西
 #[cfg(feature = "std")]
 pub trait BuildModuleGenesisStorage<T, I>: Sized {
 	/// Create the module genesis storage into the given `storage` and `child_storage`.
+	/// 在给定的“storage”和“child_storage”中创建模块创世存储。
 	fn build_module_genesis_storage(
 		&self,
 		storage: &mut sp_core::storage::Storage,
@@ -220,17 +233,22 @@ impl BuildStorage for () {
 }
 
 /// Consensus engine unique ID.
+/// 共识引擎唯一 ID。
 pub type ConsensusEngineId = [u8; 4];
 
 /// Signature verify that can work with any known signature types..
+/// 签名验证可以与任何已知签名类型一起使用。
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 #[derive(Eq, PartialEq, Clone, Encode, Decode, MaxEncodedLen, RuntimeDebug, TypeInfo)]
 pub enum MultiSignature {
 	/// An Ed25519 signature.
+	/// Ed25519签名
 	Ed25519(ed25519::Signature),
 	/// An Sr25519 signature.
+	/// Sr25519签名
 	Sr25519(sr25519::Signature),
 	/// An ECDSA/SECP256k1 signature.
+	/// ECDSA/SECP256k1签名
 	Ecdsa(ecdsa::Signature),
 }
 
@@ -286,6 +304,7 @@ impl TryFrom<MultiSignature> for ecdsa::Signature {
 }
 
 /// Public key for any known crypto algorithm.
+/// 任何已知加密算法的公钥。
 #[derive(Eq, PartialEq, Ord, PartialOrd, Clone, Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum MultiSigner {
@@ -299,6 +318,7 @@ pub enum MultiSigner {
 
 /// NOTE: This implementations is required by `SimpleAddressDeterminer`,
 /// we convert the hash into some AccountId, it's fine to use any scheme.
+/// 注意： `SimpleAddressDeterminer` 需要此实现，我们将哈希转换为一些 AccountId，使用任何方案都可以。
 impl<T: Into<H256>> crypto::UncheckedFrom<T> for MultiSigner {
 	fn unchecked_from(x: T) -> Self {
 		ed25519::Public::unchecked_from(x.into()).into()
@@ -455,21 +475,28 @@ impl From<DispatchError> for DispatchOutcome {
 /// This is the legacy return type of `Dispatchable`. It is still exposed for compatibility reasons.
 /// The new return type is `DispatchResultWithInfo`. FRAME runtimes should use
 /// `frame_support::dispatch::DispatchResult`.
+/// 这是 `Dispatchable` 的传统返回类型。出于兼容性原因，它仍然公开。新的返回类型是 `DispatchResultWithInfo`。
+/// FRAME 运行时应该使用`frame_support::dispatch::DispatchResult`。
 pub type DispatchResult = sp_std::result::Result<(), DispatchError>;
 
 /// Return type of a `Dispatchable` which contains the `DispatchResult` and additional information
 /// about the `Dispatchable` that is only known post dispatch.
+/// `Dispatchable` 的返回类型，其中包含 `DispatchResult` 和有关 `Dispatchable` 的附加信息，只有在调度后才知道。
 pub type DispatchResultWithInfo<T> = sp_std::result::Result<T, DispatchErrorWithPostInfo<T>>;
 
 /// Reason why a pallet call failed.
+/// 模块调用失败的原因。
 #[derive(Eq, Clone, Copy, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub struct ModuleError {
 	/// Module index, matching the metadata module index.
+	/// 模块索引，匹配元数据模块索引。
 	pub index: u8,
 	/// Module specific error value.
+	/// 模块特定的错误值。
 	pub error: u8,
 	/// Optional error message.
+	/// 可选的错误消息
 	#[codec(skip)]
 	#[cfg_attr(feature = "std", serde(skip_deserializing))]
 	pub message: Option<&'static str>,
@@ -482,6 +509,7 @@ impl PartialEq for ModuleError {
 }
 
 /// Reason why a dispatch call failed.
+/// 调用失败的原因
 #[derive(Eq, Clone, Copy, Encode, Decode, Debug, TypeInfo, PartialEq)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum DispatchError {
@@ -506,24 +534,29 @@ pub enum DispatchError {
 	/// An error to do with tokens.
 	Token(TokenError),
 	/// An arithmetic error.
+	/// 算术错误。
 	Arithmetic(ArithmeticError),
 }
 
 /// Result of a `Dispatchable` which contains the `DispatchResult` and additional information about
 /// the `Dispatchable` that is only known post dispatch.
+/// 一个 `Dispatchable` 的结果，其中包含 `DispatchResult` 和有关 `Dispatchable` 的附加信息，只有在调度后才知道。
 #[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct DispatchErrorWithPostInfo<Info>
 where
 	Info: Eq + PartialEq + Clone + Copy + Encode + Decode + traits::Printable,
 {
 	/// Additional information about the `Dispatchable` which is only known post dispatch.
+	/// 关于 `Dispatchable` 的附加信息，只有在派发后才知道。
 	pub post_info: Info,
 	/// The actual `DispatchResult` indicating whether the dispatch was successful.
+	/// 实际的 `DispatchResult` 指示调度是否成功。
 	pub error: DispatchError,
 }
 
 impl DispatchError {
 	/// Return the same error but without the attached message.
+	/// 返回相同的错误，但没有附加消息。
 	pub fn stripped(self) -> Self {
 		match self {
 			DispatchError::Module(ModuleError { index, error, message: Some(_) }) =>
@@ -556,22 +589,30 @@ impl From<crate::traits::BadOrigin> for DispatchError {
 }
 
 /// Description of what went wrong when trying to complete an operation on a token.
+/// 尝试完成对令牌的操作时出错的描述。
 #[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum TokenError {
 	/// Funds are unavailable.
+	/// 资金不可用
 	NoFunds,
 	/// Account that must exist would die.
+	/// 必须存在的帐户会死掉。
 	WouldDie,
 	/// Account cannot exist with the funds that would be given.
+	/// 账户不能存在将给予的资金。
 	BelowMinimum,
 	/// Account cannot be created.
+	/// 账户不能被创建
 	CannotCreate,
 	/// The asset in question is unknown.
+	/// 有问题的资产是未知的。
 	UnknownAsset,
 	/// Funds exist but are frozen.
+	/// 资金存在但被冻结。
 	Frozen,
 	/// Operation is not supported by the asset.
+	/// 操作不被支持
 	Unsupported,
 }
 
@@ -596,14 +637,18 @@ impl From<TokenError> for DispatchError {
 }
 
 /// Arithmetic errors.
+/// 算术错误
 #[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, Debug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize))]
 pub enum ArithmeticError {
 	/// Underflow.
+	/// 下溢
 	Underflow,
 	/// Overflow.
+	/// 溢出
 	Overflow,
 	/// Division by zero.
+	/// 除以0
 	DivisionByZero,
 }
 
@@ -696,27 +741,28 @@ where
 }
 
 /// This type specifies the outcome of dispatching a call to a module.
-///
+/// 此类型指定将调用调度到模块的结果。
 /// In case of failure an error specific to the module is returned.
-///
+/// 如果失败，则返回特定于模块的错误。
 /// Failure of the module call dispatching doesn't invalidate the extrinsic and it is still included
 /// in the block, therefore all state changes performed by the dispatched call are still persisted.
-///
+/// 模块调用调度的失败不会使外部无效并且它仍然包含在块中，因此调度调用执行的所有状态更改仍然保持不变。
 /// For example, if the dispatching of an extrinsic involves inclusion fee payment then these
 /// changes are going to be preserved even if the call dispatched failed.
+/// 例如，如果外在的调度涉及包含费用支付，那么即使呼叫调度失败，这些更改也将被保留。
 pub type DispatchOutcome = Result<(), DispatchError>;
 
 /// The result of applying of an extrinsic.
-///
+/// 应用外在数据的结果。
 /// This type is typically used in the context of `BlockBuilder` to signal that the extrinsic
 /// in question cannot be included.
-///
+/// 这种类型通常在 `BlockBuilder` 的上下文中使用，表示不能包含有问题的外部。
 /// A block containing extrinsics that have a negative inclusion outcome is invalid. A negative
 /// result can only occur during the block production, where such extrinsics are detected and
 /// removed from the block that is being created and the transaction pool.
-///
+/// 包含具有负面包含结果的外部因素的块是无效的。只有在区块生产期间才会出现负面结果，此时会检测到此类外部因素并将其从正在创建的区块和交易池中删除。
 /// To rehash: every extrinsic in a valid block must return a positive `ApplyExtrinsicResult`.
-///
+/// 重新散列：有效块中的每个外部都必须返回一个有效的的“ApplyExtrinsicResult”。
 /// Examples of reasons preventing inclusion in a block:
 /// - More block weight is required to process the extrinsic than is left in the block being built.
 ///   This doesn't necessarily mean that the extrinsic is invalid, since it can still be included in
@@ -724,15 +770,21 @@ pub type DispatchOutcome = Result<(), DispatchError>;
 /// - The sender doesn't have enough funds to pay the transaction inclusion fee. Including such a
 ///   transaction in the block doesn't make sense.
 /// - The extrinsic supplied a bad signature. This transaction won't become valid ever.
+/// 阻止包含在块中的原因示例：
+/// - 处理外部块需要比正在构建的块中更多的块权重。这并不一定意味着外部无效，因为如果它有足够的可用备用权重，它仍然可以包含在下一个块中。
+/// - 发件人没有足够的资金来支付交易包含费用。在区块中包含这样的交易是没有意义的。
+/// - 外部提供了错误的签名。这笔交易永远不会生效。
 pub type ApplyExtrinsicResult =
 	Result<DispatchOutcome, transaction_validity::TransactionValidityError>;
 
 /// Same as `ApplyExtrinsicResult` but augmented with `PostDispatchInfo` on success.
+/// 与 `ApplyExtrinsicResult` 相同，但在成功时增加了 `PostDispatchInfo`。
 pub type ApplyExtrinsicResultWithInfo<T> =
 	Result<DispatchResultWithInfo<T>, transaction_validity::TransactionValidityError>;
 
 /// Verify a signature on an encoded value in a lazy manner. This can be
 /// an optimization if the signature scheme has an "unsigned" escape hash.
+/// 以惰性方式验证编码值上的签名。如果签名方案具有“无符号”转义散列，这可能是一种优化。
 pub fn verify_encoded_lazy<V: Verify, T: codec::Encode>(
 	sig: &V,
 	item: &T,
@@ -742,6 +794,8 @@ pub fn verify_encoded_lazy<V: Verify, T: codec::Encode>(
 	// unfortunately this is a lifetime relationship that can't
 	// be expressed without generic associated types, better unification of HRTBs in type position,
 	// and some kind of integration into the Fn* traits.
+	// `Lazy<T>` trait 表达了类似于 `X: FnMut<Output = for<'a> &'a T>` 的东西。
+	// 不幸的是，这是一种生命周期（终身）关系，如果没有通用的关联类型，在类型位置上更好地统一HRTB，以及某种整合到Fn* traits中，就无法表达。
 	struct LazyEncode<F> {
 		inner: F,
 		encoded: Option<Vec<u8>>,
@@ -757,7 +811,8 @@ pub fn verify_encoded_lazy<V: Verify, T: codec::Encode>(
 }
 
 /// Checks that `$x` is equal to `$y` with an error rate of `$error`.
-///
+/// 检查“x”是否等于“y”，误差为“error”。
+/// x >= y - err && x <= y + err
 /// # Example
 ///
 /// ```rust
@@ -789,11 +844,13 @@ macro_rules! assert_eq_error_rate {
 
 /// Simple blob to hold an extrinsic without committing to its format and ensure it is serialized
 /// correctly.
+/// 简单的 blob 来保存外部数据而不承诺其格式并确保它被正确序列化。
 #[derive(PartialEq, Eq, Clone, Default, Encode, Decode, TypeInfo)]
 pub struct OpaqueExtrinsic(Vec<u8>);
 
 impl OpaqueExtrinsic {
 	/// Convert an encoded extrinsic to an `OpaqueExtrinsic`.
+	/// 将编码的外部转换为“不透明的外部”。
 	pub fn from_bytes(mut bytes: &[u8]) -> Result<Self, codec::Error> {
 		Self::decode(&mut bytes)
 	}
@@ -846,14 +903,16 @@ impl traits::Extrinsic for OpaqueExtrinsic {
 }
 
 /// Print something that implements `Printable` from the runtime.
+/// 从运行时打印实现“Printable”的东西。
 pub fn print(print: impl traits::Printable) {
 	print.print();
 }
 
 /// Batching session.
-///
+/// 批处理会话。
 /// To be used in runtime only. Outside of runtime, just construct
 /// `BatchVerifier` directly.
+/// 仅在运行时使用。在运行时之外，直接构造 `BatchVerifier` 即可。
 #[must_use = "`verify()` needs to be called to finish batch signature verification!"]
 pub struct SignatureBatching(bool);
 
@@ -865,6 +924,7 @@ impl SignatureBatching {
 	}
 
 	/// Verify all signatures submitted during the batching session.
+	/// 验证批处理会话期间提交的所有签名。
 	#[must_use]
 	pub fn verify(mut self) -> bool {
 		self.0 = true;
@@ -875,9 +935,10 @@ impl SignatureBatching {
 impl Drop for SignatureBatching {
 	fn drop(&mut self) {
 		// Sanity check. If user forgets to actually call `verify()`.
-		//
+		// 完整性检查。如果用户忘记实际调用 `verify()`。
 		// We should not panic if the current thread is already panicking,
 		// because Rust otherwise aborts the process.
+		// 如果当前线程已经恐慌，我们不应该恐慌，否则 Rust 会中止进程。
 		if !self.0 && !sp_std::thread::panicking() {
 			panic!("Signature verification has not been called before `SignatureBatching::drop`")
 		}
@@ -885,15 +946,19 @@ impl Drop for SignatureBatching {
 }
 
 /// Describes on what should happen with a storage transaction.
+/// 描述存储事务应该发生的情况
 pub enum TransactionOutcome<R> {
 	/// Commit the transaction.
+	/// 提交
 	Commit(R),
 	/// Rollback the transaction.
+	/// 回滚
 	Rollback(R),
 }
 
 impl<R> TransactionOutcome<R> {
 	/// Convert into the inner type.
+	/// 转换为内部类型。
 	pub fn into_inner(self) -> R {
 		match self {
 			Self::Commit(r) => r,
