@@ -48,16 +48,19 @@ pub enum BlockId<Block: BlockT> {
 
 impl<Block: BlockT> BlockId<Block> {
 	/// Create a block ID from a hash.
+	/// 创建一个block ID 从一个hash
 	pub fn hash(hash: Block::Hash) -> Self {
 		BlockId::Hash(hash)
 	}
 
 	/// Create a block ID from a number.
+	/// 从给定number生成一个block id
 	pub fn number(number: NumberFor<Block>) -> Self {
 		BlockId::Number(number)
 	}
 
 	/// Check if this block ID refers to the pre-genesis state.
+	/// 检查这个block id是否是创世前状态（尚未初始化）
 	pub fn is_pre_genesis(&self) -> bool {
 		match self {
 			BlockId::Hash(hash) => hash == &Default::default(),
@@ -66,6 +69,7 @@ impl<Block: BlockT> BlockId<Block> {
 	}
 
 	/// Create a block ID for a pre-genesis state.
+	/// 创建一个初始化区块id
 	pub fn pre_genesis() -> Self {
 		BlockId::Hash(Default::default())
 	}
@@ -81,6 +85,7 @@ impl<Block: BlockT> fmt::Display for BlockId<Block> {
 }
 
 /// Abstraction over a substrate block.
+/// 对区块的抽象
 #[derive(PartialEq, Eq, Clone, Encode, Decode, RuntimeDebug)]
 #[cfg_attr(feature = "std", derive(Serialize, Deserialize, parity_util_mem::MallocSizeOf))]
 #[cfg_attr(feature = "std", serde(rename_all = "camelCase"))]
@@ -89,6 +94,7 @@ pub struct Block<Header, Extrinsic: MaybeSerialize> {
 	/// The block header.
 	pub header: Header,
 	/// The accompanying extrinsics.
+	/// 伴随的外在因素。
 	pub extrinsics: Vec<Extrinsic>,
 }
 

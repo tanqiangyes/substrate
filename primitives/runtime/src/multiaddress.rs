@@ -16,23 +16,30 @@
 // limitations under the License.
 
 //! MultiAddress type is a wrapper for multiple downstream account formats.
+//! MultiAddress 类型是多个下游帐户格式的包装
 
 use codec::{Decode, Encode};
 use sp_std::vec::Vec;
 
 /// A multi-format address wrapper for on-chain accounts.
+/// 用于链上账户的多格式地址包装器。
 #[derive(Encode, Decode, PartialEq, Eq, Clone, crate::RuntimeDebug, scale_info::TypeInfo)]
 #[cfg_attr(feature = "std", derive(Hash))]
 pub enum MultiAddress<AccountId, AccountIndex> {
 	/// It's an account ID (pubkey).
+	/// 账户id
 	Id(AccountId),
 	/// It's an account index.
+	/// 账户索引
 	Index(#[codec(compact)] AccountIndex),
 	/// It's some arbitrary raw bytes.
+	/// 一些原始字节
 	Raw(Vec<u8>),
 	/// It's a 32 byte representation.
+	/// 32位地址
 	Address32([u8; 32]),
 	/// Its a 20 byte representation.
+	/// 20位地址
 	Address20([u8; 20]),
 }
 

@@ -17,6 +17,7 @@
 
 //! Generic implementation of an extrinsic that has passed the verification
 //! stage.
+//! 已通过验证阶段的外在因素的通用实现。。
 
 use crate::{
 	traits::{
@@ -29,10 +30,12 @@ use crate::{
 /// Definition of something that the external world might want to say; its
 /// existence implies that it has been checked and is good, particularly with
 /// regards to the signature.
+/// 外部世界可能想说的话的定义；它的存在意味着它已经过检查并且是好的，特别是在签名方面。
 #[derive(PartialEq, Eq, Clone, sp_core::RuntimeDebug)]
 pub struct CheckedExtrinsic<AccountId, Call, Extra> {
 	/// Who this purports to be from and the number of extrinsics have come before
 	/// from the same signer, if anyone (note this is not a signature).
+	/// 这声称来自谁以及外部的数量来自同一签名者（如果有人的话）（注意这不是签名）。
 	pub signed: Option<(AccountId, Extra)>,
 
 	/// The function that should be called.
@@ -57,8 +60,10 @@ where
 		len: usize,
 	) -> TransactionValidity {
 		if let Some((ref id, ref extra)) = self.signed {
+			//已经签名过了，因此直接进行验证
 			Extra::validate(extra, id, &self.function, info, len)
 		} else {
+			//没有签名
 			let valid = Extra::validate_unsigned(&self.function, info, len)?;
 			let unsigned_validation = U::validate_unsigned(source, &self.function)?;
 			Ok(valid.combine_with(unsigned_validation))
@@ -71,18 +76,23 @@ where
 		len: usize,
 	) -> crate::ApplyExtrinsicResultWithInfo<PostDispatchInfoOf<Self::Call>> {
 		let (maybe_who, maybe_pre) = if let Some((id, extra)) = self.signed {
+			//已经签名，进行预先处理，返回相应的处理结果
 			let pre = Extra::pre_dispatch(extra, &id, &self.function, info, len)?;
 			(Some(id), Some(pre))
 		} else {
+			//预先处理，未签名的交易，
 			Extra::pre_dispatch_unsigned(&self.function, info, len)?;
+			//在处理之前进行预处理
 			U::pre_dispatch(&self.function)?;
 			(None, None)
 		};
+		//实际上调度这个调用并返回它的结果。
 		let res = self.function.dispatch(Origin::from(maybe_who));
 		let post_info = match res {
 			Ok(info) => info,
 			Err(err) => err.post_info,
 		};
+		//进行额外的信息的处理
 		Extra::post_dispatch(
 			maybe_pre,
 			info,
