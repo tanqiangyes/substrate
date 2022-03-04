@@ -541,6 +541,7 @@ pub enum DispatchError {
 /// Result of a `Dispatchable` which contains the `DispatchResult` and additional information about
 /// the `Dispatchable` that is only known post dispatch.
 /// 一个 `Dispatchable` 的结果，其中包含 `DispatchResult` 和有关 `Dispatchable` 的附加信息，只有在调度后才知道。
+#[derive(Eq, PartialEq, Clone, Copy, Encode, Decode, RuntimeDebug, TypeInfo)]
 pub struct DispatchErrorWithPostInfo<Info>
 where
 	Info: Eq + PartialEq + Clone + Copy + Encode + Decode + traits::Printable,
