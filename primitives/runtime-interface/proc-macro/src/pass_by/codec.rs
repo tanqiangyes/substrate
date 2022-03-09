@@ -29,6 +29,7 @@ use quote::quote;
 use proc_macro2::TokenStream;
 
 /// The derive implementation for `PassBy` with `Codec`.
+/// 带有 `Codec` 的 `PassBy` 的派生实现。
 pub fn derive_impl(mut input: DeriveInput) -> Result<TokenStream> {
 	add_trait_bounds(&mut input.generics);
 	let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -50,6 +51,7 @@ pub fn derive_impl(mut input: DeriveInput) -> Result<TokenStream> {
 }
 
 /// Add the `codec::Codec` trait bound to every type parameter.
+/// 添加绑定到每个类型参数的`codec::Codec` trait。
 fn add_trait_bounds(generics: &mut Generics) {
 	let crate_ = generate_crate_access();
 

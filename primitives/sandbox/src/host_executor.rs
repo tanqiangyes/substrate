@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! A WASM executor utilizing the sandbox runtime interface of the host.
+//! 一个使用主机沙箱运行时接口的 WASM 执行器。
 
 use super::{Error, HostFuncType, ReturnValue, Value};
 use codec::{Decode, Encode};
@@ -28,18 +29,21 @@ mod ffi {
 	use sp_std::mem;
 
 	/// Index into the default table that points to a `HostFuncType`.
+	/// 指向指向“HostFuncType”的默认表的索引。
 	pub type HostFuncIndex = usize;
 
 	/// Coerce `HostFuncIndex` to a callable host function pointer.
-	///
+	/// 将 `HostFuncIndex` 强制为可调用的主机函数指针。
 	/// # Safety
 	///
 	/// This function should be only called with a `HostFuncIndex` that was previously registered
 	/// in the environment definition. Typically this should only
 	/// be called with an argument received in `dispatch_thunk`.
+	/// 此函数只能使用先前在环境定义中注册的“HostFuncIndex”调用。通常，这应该只使用在 `dispatch_thunk` 中接收到的参数来调用。
 	pub unsafe fn coerce_host_index_to_func<T>(idx: HostFuncIndex) -> HostFuncType<T> {
 		// We need to ensure that sizes of a callable function pointer and host function index is
 		// indeed equal.
+		// 我们需要确保可调用函数指针和宿主函数索引的大小确实相等。
 		// We can't use `static_assertions` create because it makes compiler panic, fallback to
 		// runtime assert. const_assert!(mem::size_of::<HostFuncIndex>() ==
 		// mem::size_of::<HostFuncType<T>>());
@@ -59,10 +63,12 @@ impl Drop for MemoryHandle {
 }
 
 /// The linear memory used by the sandbox.
+/// 沙盒使用的线性内存。
 #[derive(Clone)]
 pub struct Memory {
 	// Handle to memory instance is wrapped to add reference-counting semantics
 	// to `Memory`.
+	// 包装内存实例的句柄以将引用计数语义添加到“内存”。
 	handle: Rc<MemoryHandle>,
 }
 
@@ -103,6 +109,7 @@ impl super::SandboxMemory for Memory {
 }
 
 /// A builder for the environment of the sandboxed WASM module.
+/// 沙盒 WASM 模块环境的构建器。
 pub struct EnvironmentDefinitionBuilder<T> {
 	env_def: sandbox_primitives::EnvironmentDefinition,
 	retained_memories: Vec<Memory>,
@@ -160,6 +167,7 @@ impl<T> super::SandboxEnvironmentBuilder<T, Memory> for EnvironmentDefinitionBui
 }
 
 /// Sandboxed instance of a WASM module.
+/// WASM 模块的沙盒实例。
 pub struct Instance<T> {
 	instance_idx: u32,
 	_retained_memories: Vec<Memory>,
@@ -168,6 +176,7 @@ pub struct Instance<T> {
 
 /// The primary responsibility of this thunk is to deserialize arguments and
 /// call the original function, specified by the index.
+/// 这个 thunk 的主要职责是反序列化参数并调用索引指定的原始函数。
 extern "C" fn dispatch_thunk<T>(
 	serialized_args_ptr: *const u8,
 	serialized_args_len: usize,
@@ -191,15 +200,20 @@ extern "C" fn dispatch_thunk<T>(
 		// This should be safe since `coerce_host_index_to_func` is called with an argument
 		// received in an `dispatch_thunk` implementation, so `f` should point
 		// on a valid host function.
+		// 这应该是安全的，因为 `coerce_host_index_to_func` 是使用在 `dispatch_thunk` 实现
+		// 中接收的参数调用的，因此 `f` 应该指向有效的主机函数。
 		let f = ffi::coerce_host_index_to_func(f);
 
 		// This should be safe since mutable reference to T is passed upon the invocation.
+		// 这应该是安全的，因为对 T 的可变引用是在调用时传递的。
 		let state = &mut *(state as *mut T);
 
 		// Pass control flow to the designated function.
+		// 将控制流传递给指定的函数
 		let result = f(state, &args).encode();
 
 		// Leak the result vector and return the pointer to return data.
+		// 泄漏结果向量并返回返回数据的指针。
 		let result_ptr = result.as_ptr() as u64;
 		let result_len = result.len() as u64;
 		mem::forget(result);
@@ -219,6 +233,7 @@ impl<T> super::SandboxInstance<T> for Instance<T> {
 	) -> Result<Instance<T>, Error> {
 		let serialized_env_def: Vec<u8> = env_def_builder.env_def.encode();
 		// It's very important to instantiate thunk with the right type.
+		// 用正确的类型实例化 thunk 非常重要。
 		let dispatch_thunk = dispatch_thunk::<T>;
 		let result = sandbox::instantiate(
 			dispatch_thunk as u32,
@@ -234,6 +249,7 @@ impl<T> super::SandboxInstance<T> for Instance<T> {
 		};
 
 		// We need to retain memories to keep them alive while the Instance is alive.
+		// 我们需要保留记忆，以便在 Instance 还活着的时候让它们保持活力。
 		let retained_memories = env_def_builder.retained_memories.clone();
 		Ok(Instance {
 			instance_idx,
