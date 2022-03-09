@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Types and traits for interfacing between the host and the wasm runtime.
+//! 用于主机和 wasm 运行时之间接口的类型和特征。
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -126,6 +127,7 @@ impl Value {
 
 /// Provides `Sealed` trait to prevent implementing trait `PointerType` and `WasmTy` outside of this
 /// crate.
+/// 提供 `Sealed` trait 以防止在此 crate 之外实现 trait `PointerType` 和 `WasmTy`。
 mod private {
 	pub trait Sealed {}
 
@@ -152,6 +154,7 @@ impl PointerType for u32 {}
 impl PointerType for u64 {}
 
 /// Type to represent a pointer in wasm at the host.
+/// 表示主机上的 wasm 中的指针。
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Pointer<T: PointerType> {
 	ptr: u32,
@@ -165,11 +168,12 @@ impl<T: PointerType> Pointer<T> {
 	}
 
 	/// Calculate the offset from this pointer.
-	///
+	/// 计算从此指针的偏移量
 	/// `offset` is in units of `T`. So, `3` means `3 * mem::size_of::<T>()` as offset to the
 	/// pointer.
-	///
+	/// `offset` 以 `T` 为单位。因此，`3` 表示`3 mem::size_of::<T>()` 作为指针的偏移量。
 	/// Returns an `Option` to respect that the pointer could probably overflow.
+	/// 返回一个 `Option` 以表示指针可能会溢出。
 	pub fn offset(self, offset: u32) -> Option<Self> {
 		offset
 			.checked_mul(T::SIZE)
@@ -183,6 +187,7 @@ impl<T: PointerType> Pointer<T> {
 	}
 
 	/// Cast this pointer of type `T` to a pointer of type `R`.
+	/// 将此“T”类型的指针转换为“R”类型的指针。
 	pub fn cast<R: PointerType>(self) -> Pointer<R> {
 		Pointer::new(self.ptr)
 	}
@@ -229,6 +234,7 @@ impl<T: PointerType> TryFromValue for Pointer<T> {
 }
 
 /// The word size used in wasm. Normally known as `usize` in Rust.
+/// wasm 中使用的字长。在 Rust 中通常称为“usize”。
 pub type WordSize = u32;
 
 /// The Signature of a function
@@ -268,6 +274,7 @@ pub trait MaybeRefUnwindSafe {}
 impl<T> MaybeRefUnwindSafe for T {}
 
 /// Something that provides a function implementation on the host for a wasm function.
+/// 在主机上为 wasm 函数提供函数实现的东西。
 pub trait Function: MaybeRefUnwindSafe + Send + Sync {
 	/// Returns the name of this function.
 	fn name(&self) -> &str;
@@ -288,6 +295,7 @@ impl PartialEq for dyn Function {
 }
 
 /// Context used by `Function` to interact with the allocator and the memory of the wasm instance.
+/// `Function` 用来与分配器和 wasm 实例的内存交互的上下文。
 pub trait FunctionContext {
 	/// Read memory from `address` into a vector.
 	fn read_memory(&self, address: Pointer<u8>, size: WordSize) -> Result<Vec<u8>> {
@@ -307,10 +315,10 @@ pub trait FunctionContext {
 	fn sandbox(&mut self) -> &mut dyn Sandbox;
 
 	/// Registers a panic error message within the executor.
-	///
+	/// 在执行程序中注册恐慌错误消息。
 	/// This is meant to be used in situations where the runtime
 	/// encounters an unrecoverable error and intends to panic.
-	///
+	/// 这意味着在运行时遇到不可恢复的错误并打算恐慌的情况下使用。
 	/// Panicking in WASM is done through the [`unreachable`](https://webassembly.github.io/spec/core/syntax/instructions.html#syntax-instr-control)
 	/// instruction which causes an unconditional trap and immediately aborts
 	/// the execution. It does not however allow for any diagnostics to be
@@ -331,11 +339,14 @@ pub trait FunctionContext {
 }
 
 /// Sandbox memory identifier.
+/// 沙盒内存标识符。
 pub type MemoryId = u32;
 
 /// Something that provides access to the sandbox.
+/// 提供对沙箱的访问权限的东西。
 pub trait Sandbox {
 	/// Get sandbox memory from the `memory_id` instance at `offset` into the given buffer.
+	/// 从 `memory_id` 实例中的 `offset` 获取沙盒内存到给定缓冲区中。
 	fn memory_get(
 		&mut self,
 		memory_id: MemoryId,
@@ -344,6 +355,7 @@ pub trait Sandbox {
 		buf_len: WordSize,
 	) -> Result<u32>;
 	/// Set sandbox memory from the given value.
+	/// 从给定值设置沙盒内存。
 	fn memory_set(
 		&mut self,
 		memory_id: MemoryId,
@@ -352,11 +364,14 @@ pub trait Sandbox {
 		val_len: WordSize,
 	) -> Result<u32>;
 	/// Delete a memory instance.
+	/// 删除内存实例。
 	fn memory_teardown(&mut self, memory_id: MemoryId) -> Result<()>;
 	/// Create a new memory instance with the given `initial` size and the `maximum` size.
 	/// The size is given in wasm pages.
+	/// 使用给定的“初始”大小和“最大”大小创建一个新的内存实例。大小在 wasm 页面中给出。
 	fn memory_new(&mut self, initial: u32, maximum: u32) -> Result<MemoryId>;
 	/// Invoke an exported function by a name.
+	/// 通过名称调用导出的函数。
 	fn invoke(
 		&mut self,
 		instance_id: u32,
@@ -367,8 +382,10 @@ pub trait Sandbox {
 		state: u32,
 	) -> Result<u32>;
 	/// Delete a sandbox instance.
+	/// 删除一个沙盒实例
 	fn instance_teardown(&mut self, instance_id: u32) -> Result<()>;
 	/// Create a new sandbox instance.
+	/// 创建一个沙盒实例
 	fn instance_new(
 		&mut self,
 		dispatch_thunk_id: u32,
@@ -379,18 +396,20 @@ pub trait Sandbox {
 
 	/// Get the value from a global with the given `name`. The sandbox is determined by the
 	/// given `instance_idx` instance.
-	///
+	/// 从具有给定“名称”的全局变量中获取值。沙箱由给定的“instance_idx”实例确定。
 	/// Returns `Some(_)` when the requested global variable could be found.
+	/// 当可以找到请求的全局变量时返回 `Some(_)`。
 	fn get_global_val(&self, instance_idx: u32, name: &str) -> Result<Option<Value>>;
 }
 
 if_wasmtime_is_enabled! {
 	/// A trait used to statically register host callbacks with the WASM executor,
 	/// so that they call be called from within the runtime with minimal overhead.
-	///
+	/// 用于向 WASM 执行器静态注册主机回调的特征，以便以最小的开销从运行时内部调用它们。
 	/// This is used internally to interface the wasmtime-based executor with the
 	/// host functions' definitions generated through the runtime interface macro,
 	/// and is not meant to be used directly.
+	/// 这在内部用于将基于 wasmtime 的执行程序与通过运行时接口宏生成的主机函数定义接口，并不意味着直接使用。
 	pub trait HostFunctionRegistry {
 		type State;
 		type Error;
@@ -398,15 +417,17 @@ if_wasmtime_is_enabled! {
 
 		/// Wraps the given `caller` in a type which implements `FunctionContext`
 		/// and calls the given `callback`.
+		/// 将给定的 `caller` 包装在实现 `FunctionContext` 并调用给定的 `callback` 的类型中。
 		fn with_function_context<R>(
 			caller: wasmtime::Caller<Self::State>,
 			callback: impl FnOnce(&mut dyn FunctionContext) -> R,
 		) -> R;
 
 		/// Registers a given host function with the WASM executor.
-		///
+		/// 向 WASM 执行器注册给定的主机函数。
 		/// The function has to be statically callable, and all of its arguments
 		/// and its return value have to be compatible with WASM FFI.
+		/// 该函数必须是静态可调用的，并且它的所有参数及其返回值都必须与 WASM FFI 兼容。
 		fn register_static<Params, Results>(
 			&mut self,
 			fn_name: &str,
@@ -416,12 +437,15 @@ if_wasmtime_is_enabled! {
 }
 
 /// Something that provides implementations for host functions.
+/// 为主机功能提供实现的东西。
 pub trait HostFunctions: 'static + Send + Sync {
 	/// Returns the host functions `Self` provides.
+	/// 返回 `Self` 提供的宿主函数。
 	fn host_functions() -> Vec<&'static dyn Function>;
 
 	if_wasmtime_is_enabled! {
 		/// Statically registers the host functions.
+		/// 静态注册主机功能。
 		fn register_static<T>(registry: &mut T) -> core::result::Result<(), T::Error>
 		where
 			T: HostFunctionRegistry;
@@ -453,6 +477,7 @@ impl HostFunctions for Tuple {
 
 /// A wrapper which merges two sets of host functions, and allows the second set to override
 /// the host functions from the first set.
+/// 一个包装器，它合并了两组主机函数，并允许第二组覆盖第一组的主机函数。
 pub struct ExtendedHostFunctions<Base, Overlay> {
 	phantom: PhantomData<(Base, Overlay)>,
 }
@@ -561,8 +586,9 @@ where
 }
 
 /// A trait for types directly usable at the WASM FFI boundary without any conversion at all.
-///
+/// 无需任何转换即可在 WASM FFI 边界直接使用的类型的特征。
 /// This trait is sealed and should not be implemented downstream.
+/// 此特征是密封的，不应在下游实施。
 #[cfg(all(feature = "std", feature = "wasmtime"))]
 pub trait WasmTy: wasmtime::WasmTy + private::Sealed {}
 
@@ -670,8 +696,9 @@ impl ReadPrimitive<u64> for &mut dyn FunctionContext {
 }
 
 /// Typed value that can be returned from a function.
-///
+/// 可以从函数返回的类型值
 /// Basically a `TypedValue` plus `Unit`, for functions which return nothing.
+/// 基本上是一个 `TypedValue` 加上 `Unit`，用于不返回任何内容的函数。
 #[derive(Clone, Copy, PartialEq, codec::Encode, codec::Decode, Debug)]
 pub enum ReturnValue {
 	/// For returning nothing.
@@ -688,11 +715,15 @@ impl From<Value> for ReturnValue {
 
 impl ReturnValue {
 	/// Maximum number of bytes `ReturnValue` might occupy when serialized with `SCALE`.
-	///
+	/// 使用 `SCALE` 序列化时，`ReturnValue` 可能占用的最大字节数。
 	/// Breakdown:
 	///  1 byte for encoding unit/value variant
 	///  1 byte for encoding value type
 	///  8 bytes for encoding the biggest value types available in wasm: f64, i64.
+	/// 细分：
+	/// 1 个字节用于编码 unit/value 变体
+	/// 1 个字节用于编码值类型
+	/// 8 个字节用于编码 wasm 中可用的最大值类型：f64、i64
 	pub const ENCODED_MAX_SIZE: usize = 10;
 }
 

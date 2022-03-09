@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Provides implementations for the runtime interface traits.
+//! 提供运行时接口特征的实现
 
 #[cfg(feature = "std")]
 use crate::host::*;
@@ -41,12 +42,14 @@ use sp_std::{any::TypeId, mem, vec::Vec};
 use sp_std::borrow::Cow;
 
 // Make sure that our assumptions for storing a pointer + its size in `u64` is valid.
+//确保我们在 `u64` 中存储指针 + 其大小的假设是有效的。
 #[cfg(all(not(feature = "std"), not(feature = "disable_target_static_assertions")))]
 assert_eq_size!(usize, u32);
 #[cfg(all(not(feature = "std"), not(feature = "disable_target_static_assertions")))]
 assert_eq_size!(*const u8, u32);
 
 /// Implement the traits for the given primitive traits.
+/// 为给定的原始特征实现特征。
 macro_rules! impl_traits_for_primitives {
 	(
 		$(

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! An embedded WASM executor utilizing `wasmi`.
+//! 使用 `wasmi` 的嵌入式 WASM 执行器。
 
 use super::{Error, HostError, HostFuncType, ReturnValue, Value, TARGET};
 use alloc::string::String;
@@ -30,6 +31,7 @@ use wasmi::{
 };
 
 /// The linear memory used by the sandbox.
+/// 沙盒使用的线性内存。
 #[derive(Clone)]
 pub struct Memory {
 	memref: MemoryRef,
@@ -218,6 +220,7 @@ impl<T> ImportResolver for EnvironmentDefinitionBuilder<T> {
 }
 
 /// Sandboxed instance of a WASM module.
+/// WASM 模块的沙盒实例。
 pub struct Instance<T> {
 	instance: ModuleRef,
 	defined_host_functions: DefinedHostFunctions<T>,

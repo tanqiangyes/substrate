@@ -16,15 +16,17 @@
 // limitations under the License.
 
 //! Substrate runtime interface
-//!
+//! substrate运行时接口
 //! This crate provides types, traits and macros around runtime interfaces. A runtime interface is
 //! a fixed interface between a Substrate runtime and a Substrate node. For a native runtime the
 //! interface maps to a direct function call of the implementation. For a wasm runtime the interface
 //! maps to an external function call. These external functions are exported by the wasm executor
 //! and they map to the same implementation as the native calls.
-//!
+//! 这个板块围绕运行时接口提供类型、特征和宏。运行时接口是Substrate运行时和Substrate节点之间的一个固定接口。
+//! 对于一个本地运行时，该接口映射到实现的直接函数调用。对于wasm运行时，接口映射到外部函数调用。
+//! 这些外部函数是由wasm执行器导出的，它们映射到与本地调用相同的实现。
 //! # Using a type in a runtime interface
-//!
+//! 在运行时接口中使用类型
 //! Any type that should be used in a runtime interface as argument or return value needs to
 //! implement [`RIType`]. The associated type
 //! [`FFIType`](./trait.RIType.html#associatedtype.FFIType) is the type that is used in the FFI
@@ -32,7 +34,10 @@
 //! pointer and the length will be mapped to an `u64` value. For more information see this
 //! [table](#ffi-type-and-conversion). The FFI function definition is used when calling from the
 //! wasm runtime into the node.
-//!
+//! 任何应该在运行时接口中作为参数或返回值使用的类型都需要实现[`RIType`]。
+//! 关联类型[`FFIType`](./trait.RIType.html#associatedtype.FFIType)是FFI函数中用于表示实际类型的类型。
+//! 例如`[T]`是由`u64`表示的。切片指针和长度将被映射到一个`u64`值。更多信息请看这个[表](#ffi-type-and-conversion)。
+//! FFI函数定义在从wasm运行时调用到节点时使用。
 //! Traits are used to convert from a type to the corresponding
 //! [`RIType::FFIType`](./trait.RIType.html#associatedtype.FFIType).
 //! Depending on where and how a type should be used in a function signature, a combination of the
@@ -41,14 +46,19 @@
 //! 1. Pass as function argument: [`wasm::IntoFFIValue`] and [`host::FromFFIValue`]
 //! 2. As function return value: [`wasm::FromFFIValue`] and [`host::IntoFFIValue`]
 //! 3. Pass as mutable function argument: [`host::IntoPreallocatedFFIValue`]
-//!
+//! Traits用于从一个类型转换为相应的[`RIType::FFIType`]（./trait.RIType.html#associatedtype.FFIType）。
+//   根据一个类型在函数签名中的使用位置和方式，需要实现以下特质的组合。
+//  <! -- markdown-link-check-enable -->。
+// 1. 作为函数参数传递。[`wasm::IntoFFIValue`] 和 [`host::FromFFIValue`])
+// 2. 作为函数的返回值。[`wasm::FromFFIValue`]和[`host::IntoFFIValue`]。
+// 3. 作为可变函数参数传递。[`host::IntoPreallocatedFFIValue`])
 //! The traits are implemented for most of the common types like `[T]`, `Vec<T>`, arrays and
 //! primitive types.
-//!
+//! 这些特征是为大多数常见类型实现的，例如`[T]`、`Vec<T>`、数组和原始类型。
 //! For custom types, we provide the [`PassBy`](./pass_by#PassBy) trait and strategies that define
 //! how a type is passed between the wasm runtime and the node. Each strategy also provides a derive
 //! macro to simplify the implementation.
-//!
+//! 对于自定义类型，我们提供了 [`PassBy`](./pass_by#PassBy) 特征和定义类型如何在 wasm 运行时和节点之间传递。每个策略还提供一个派生宏来简化实现。
 //! # Performance
 //!
 //! To not waste any more performance when calling into the node, not all types are SCALE encoded
@@ -56,7 +66,9 @@
 //! are raw bytes like `Vec<u8>`, `[u8]` or `[u8; N]` we pass them directly, without SCALE encoding
 //! them in front of. The implementation of [`RIType`] each type provides more information on how
 //! the data is passed.
-//!
+//! 为了在调用节点时不浪费更多的性能，在wasm运行时和节点之间作为参数传递时，并不是所有的类型都被SCALE编码。
+//! 对于大多数像 "Vec<u8>"、"[u8]"或"[u8; N]"这样的原始字节类型，我们直接传递它们，不在前面进行SCALE编码。
+//! 每个类型的[`RIType`]的实现提供了更多关于如何传递数据的信息。
 //! # Declaring a runtime interface
 //!
 //! Declaring a runtime interface is similar to declaring a trait in Rust:
@@ -120,14 +132,15 @@ pub use sp_tracing;
 pub use sp_std;
 
 /// Attribute macro for transforming a trait declaration into a runtime interface.
-///
+/// 用于将trait声明转换为运行时接口的属性宏。
 /// A runtime interface is a fixed interface between a Substrate compatible runtime and the
 /// native node. This interface is callable from a native and a wasm runtime. The macro will
 /// generate the corresponding code for the native implementation and the code for calling from
 /// the wasm side to the native implementation.
-///
+/// 运行时接口是 Substrate 兼容运行时和本机节点之间的固定接口。此接口可从本机和 wasm 运行时调用。
+/// 宏会生成对应的原生实现代码，以及从wasm端调用原生实现的代码。
 /// The macro expects the runtime interface declaration as trait declaration:
-///
+/// 宏期望运行时接口声明为特征声明：
 /// ```
 /// # use sp_runtime_interface::runtime_interface;
 ///
@@ -299,17 +312,21 @@ pub use sp_std;
 /// argument to the corresponding FFI representation and will call into the host using this FFI
 /// representation. On the host each argument is converted back to the native representation
 /// and the native implementation is called. Any return value is handled in the same way.
-///
+/// 该宏支持任何类型的参数类型，只要它实现 [`RIType`] 和所需的 `FromFFIValue``IntoFFIValue`。
+/// 宏会将每个参数转换为相应的 FFI 表示，并使用该 FFI 表示调用主机。
+/// 在主机上，每个参数都被转换回本机表示，并调用本机实现。任何返回值都以相同的方式处理。
 /// # Wasm only interfaces
 ///
 /// Some interfaces are only required from within the wasm runtime e.g. the allocator
 /// interface. To support this, the macro can be called like `#[runtime_interface(wasm_only)]`.
 /// This instructs the macro to make two significant changes to the generated code:
-///
+/// 某些接口仅在 wasm 运行时中需要，例如分配器接口。
+/// 为了支持这一点，可以像 `[runtime_interface(wasm_only)]` 一样调用宏。这指示宏对生成的代码进行两项重大更改：
 /// 1. The generated functions are not callable from the native side.
 /// 2. The trait as shown above is not implemented for [`Externalities`] and is instead
 /// implemented for `FunctionExecutor` (from `sp-wasm-interface`).
-///
+/// 1. 生成的函数不能从原生端调用。
+/// 2. 如上所示的 trait 没有为 [`Externalities`] 实现，而是为 `FunctionExecutor` 实现（来自 `sp-wasm-interface`）。
 /// # Disable tracing
 /// By addding `no_tracing` to the list of options you can prevent the wasm-side interface from
 /// generating the default `sp-tracing`-calls. Note that this is rarely needed but only meant
@@ -341,11 +358,13 @@ pub use util::{pack_ptr_and_len, unpack_ptr_and_len};
 
 /// Something that can be used by the runtime interface as type to communicate between wasm and the
 /// host.
-///
+/// 可以被运行时接口用作在 wasm 和主机之间进行通信的类型的东西。
 /// Every type that should be used in a runtime interface function signature needs to implement
 /// this trait.
+/// 应该在运行时接口函数签名中使用的每种类型都需要实现此特征。
 pub trait RIType {
 	/// The ffi type that is used to represent `Self`.
+	/// 用于表示 `Self` 的 ffi 类型。
 	#[cfg(feature = "std")]
 	type FFIType: sp_wasm_interface::IntoValue
 		+ sp_wasm_interface::TryFromValue
@@ -359,5 +378,6 @@ pub trait RIType {
 pub type Pointer<T> = *mut T;
 
 /// A pointer that can be used in a runtime interface function signature.
+/// 可在运行时接口函数签名中使用的指针。
 #[cfg(feature = "std")]
 pub type Pointer<T> = sp_wasm_interface::Pointer<T>;
