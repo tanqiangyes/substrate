@@ -156,35 +156,39 @@ pub trait Storage {
 	}
 
 	/// Clear the storage of each key-value pair where the key starts with the given `prefix`.
+	/// 清除以给定“前缀”开头的每个键值对的存储。
 	fn clear_prefix(&mut self, prefix: &[u8]) {
 		let _ = Externalities::clear_prefix(*self, prefix, None);
 	}
 
-	/// Clear the storage of each key-value pair where the key starts with the given `prefix`.
-	///
+	/// clear the storage of each key-value pair where the key starts with the given `prefix`.
+	/// 清除以给定“前缀”开头的每个键值对的存储。
 	/// # Limit
 	///
 	/// Deletes all keys from the overlay and up to `limit` keys from the backend if
 	/// it is set to `Some`. No limit is applied when `limit` is set to `None`.
-	///
+	/// 如果设置为 `Some`，则从覆盖层中删除所有键，并从后端删除最多 `limit` 个键。当 `limit` 设置为 `None` 时，不应用任何限制。
 	/// The limit can be used to partially delete a prefix storage in case it is too large
 	/// to delete in one go (block).
-	///
+	/// 该限制可用于部分删除前缀存储，以防它太大而无法一次性删除（块）。
 	/// It returns a boolean false iff some keys are remaining in
 	/// the prefix after the functions returns. Also returns a `u32` with
 	/// the number of keys removed from the process.
-	///
+	/// 如果函数返回后某些键保留在前缀中，则返回布尔值 false。还返回一个“u32”，其中包含从进程中删除的键数。
 	/// # Note
 	///
 	/// Please note that keys that are residing in the overlay for that prefix when
 	/// issuing this call are all deleted without counting towards the `limit`. Only keys
 	/// written during the current block are part of the overlay. Deleting with a `limit`
 	/// mostly makes sense with an empty overlay for that prefix.
-	///
+	/// 请注意，在发出此调用时，位于该前缀覆盖层中的键全部被删除，不计入“限制”。
+	/// 只有在当前块期间写入的键是覆盖的一部分。使用 `limit` 删除对于该前缀的空覆盖大多是有意义的。
 	/// Calling this function multiple times per block for the same `prefix` does
 	/// not make much sense because it is not cumulative when called inside the same block.
 	/// Use this function to distribute the deletion of a single child trie across multiple
 	/// blocks.
+	/// 为同一个“前缀”在每个块中多次调用此函数没有多大意义，因为在同一个块内调用时它不是累积的。
+	/// 使用此函数将单个子 trie 的删除分布到多个块中。
 	#[version(2)]
 	fn clear_prefix(&mut self, prefix: &[u8], limit: Option<u32>) -> KillStorageResult {
 		let (all_removed, num_removed) = Externalities::clear_prefix(*self, prefix, limit);
@@ -195,81 +199,90 @@ pub trait Storage {
 	}
 
 	/// Append the encoded `value` to the storage item at `key`.
-	///
+	/// 将编码的 `value` 附加到 `key` 处的存储项。
 	/// The storage item needs to implement [`EncodeAppend`](codec::EncodeAppend).
-	///
+	/// 存储项需要实现[`EncodeAppend`](codec::EncodeAppend)。
 	/// # Warning
 	///
 	/// If the storage item does not support [`EncodeAppend`](codec::EncodeAppend) or
 	/// something else fails at appending, the storage item will be set to `[value]`.
+	/// 如果存储项不支持 [`EncodeAppend`](codec::EncodeAppend) 或其他附加失败，则存储项将设置为 `[value]`。
 	fn append(&mut self, key: &[u8], value: Vec<u8>) {
 		self.storage_append(key.to_vec(), value);
 	}
 
 	/// "Commit" all existing operations and compute the resulting storage root.
-	///
+	/// “提交”所有现有操作并计算生成的存储根。
 	/// The hashing algorithm is defined by the `Block`.
-	///
+	/// 哈希算法由“块”定义。
 	/// Returns a `Vec<u8>` that holds the SCALE encoded hash.
+	/// 返回保存 SCALE 编码哈希的 `Vec<u8>`。
 	fn root(&mut self) -> Vec<u8> {
 		self.storage_root(StateVersion::V0)
 	}
 
-	/// "Commit" all existing operations and compute the resulting storage root.
-	///
+	/// "commit" all existing operations and compute the resulting storage root.
+	/// “commit”所有现有操作并计算生成的存储根。
 	/// The hashing algorithm is defined by the `Block`.
-	///
+	/// 哈希算法由“块”定义。
 	/// Returns a `Vec<u8>` that holds the SCALE encoded hash.
+	/// 返回保存 SCALE 编码哈希的 `Vec<u8>`。
 	#[version(2)]
 	fn root(&mut self, version: StateVersion) -> Vec<u8> {
 		self.storage_root(version)
 	}
 
 	/// Always returns `None`. This function exists for compatibility reasons.
+	/// 始终返回“无”。出于兼容性原因，存在此功能。
 	fn changes_root(&mut self, _parent_hash: &[u8]) -> Option<Vec<u8>> {
 		None
 	}
 
 	/// Get the next key in storage after the given one in lexicographic order.
+	/// 按字典顺序获取给定键之后的下一个存储键。
 	fn next_key(&mut self, key: &[u8]) -> Option<Vec<u8>> {
 		self.next_storage_key(&key)
 	}
 
 	/// Start a new nested transaction.
-	///
+	/// 开始一个新的嵌套事务。
 	/// This allows to either commit or roll back all changes that are made after this call.
 	/// For every transaction there must be a matching call to either `rollback_transaction`
 	/// or `commit_transaction`. This is also effective for all values manipulated using the
 	/// `DefaultChildStorage` API.
-	///
+	/// 这允许提交或回滚在此调用之后所做的所有更改。对于每个事务，必须有一个匹配的调用“rollback_transaction”
+	/// 或“commit_transaction”。这对于使用 `DefaultChildStorage` API 操作的所有值也有效。
 	/// # Warning
 	///
 	/// This is a low level API that is potentially dangerous as it can easily result
 	/// in unbalanced transactions. For example, FRAME users should use high level storage
 	/// abstractions.
+	/// 这是一个具有潜在危险的低级 API，因为它很容易导致交易不平衡。例如，FRAME 用户应该使用高级存储抽象。
 	fn start_transaction(&mut self) {
 		self.storage_start_transaction();
 	}
 
 	/// Rollback the last transaction started by `start_transaction`.
-	///
+	/// 回滚由 `start_transaction` 启动的最后一个事务。
 	/// Any changes made during that transaction are discarded.
-	///
+	/// 在该事务期间所做的任何更改都将被丢弃
 	/// # Panics
 	///
 	/// Will panic if there is no open transaction.
+	/// 如果没有打开的交易会恐慌。
 	fn rollback_transaction(&mut self) {
 		self.storage_rollback_transaction()
 			.expect("No open transaction that can be rolled back.");
 	}
 
 	/// Commit the last transaction started by `start_transaction`.
-	///
+	/// 提交由 `start_transaction` 启动的最后一个事务。
 	/// Any changes made during that transaction are committed.
-	///
+	/// 在该事务期间所做的任何更改都将被提交。
 	/// # Panics
 	///
 	/// Will panic if there is no open transaction.
+	/// 如果没有打开的交易会恐慌。
 	fn commit_transaction(&mut self) {
 		self.storage_commit_transaction()
 			.expect("No open transaction that can be committed.");
@@ -278,24 +291,28 @@ pub trait Storage {
 
 /// Interface for accessing the child storage for default child trie,
 /// from within the runtime.
+/// 用于从运行时访问默认子 trie 的子存储的接口。
 #[runtime_interface]
 pub trait DefaultChildStorage {
 	/// Get a default child storage value for a given key.
-	///
+	/// 获取给定键的默认子存储值
 	/// Parameter `storage_key` is the unprefixed location of the root of the child trie in the
 	/// parent trie. Result is `None` if the value for `key` in the child storage can not be found.
+	/// 参数 `storage_key` 是父 trie 中子 trie 的根的无前缀位置。如果在子存储中找不到 `key` 的值，则结果为 `None`。
 	fn get(&self, storage_key: &[u8], key: &[u8]) -> Option<Vec<u8>> {
 		let child_info = ChildInfo::new_default(storage_key);
 		self.child_storage(&child_info, key).map(|s| s.to_vec())
 	}
 
 	/// Allocation efficient variant of `get`.
-	///
+	/// `get` 的分配高效变体。
 	/// Get `key` from child storage, placing the value into `value_out` and return the number
 	/// of bytes that the entry in storage has beyond the offset or `None` if the storage entry
 	/// doesn't exist at all.
 	/// If `value_out` length is smaller than the returned length, only `value_out` length bytes
 	/// are copied into `value_out`.
+	/// 从子存储中获取 `key`，将值放入 `value_out` 并返回存储中的条目超出偏移量的字节数，如果存储条目根本不存在，则返回 `None`。
+	/// 如果 `value_out` 长度小于返回的长度，则只有 `value_out` 长度字节被复制到 `value_out` 中。
 	fn read(
 		&self,
 		storage_key: &[u8],
@@ -314,15 +331,16 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Set a child storage value.
-	///
+	/// 设置子存储值
 	/// Set `key` to `value` in the child storage denoted by `storage_key`.
+	/// 在由 `storage_key` 表示的子存储中将 `key` 设置为 `value`。
 	fn set(&mut self, storage_key: &[u8], key: &[u8], value: &[u8]) {
 		let child_info = ChildInfo::new_default(storage_key);
 		self.set_child_storage(&child_info, key.to_vec(), value.to_vec());
 	}
 
 	/// Clear a child storage key.
-	///
+	/// 清除子存储密钥
 	/// For the default child storage at `storage_key`, clear value at `key`.
 	fn clear(&mut self, storage_key: &[u8], key: &[u8]) {
 		let child_info = ChildInfo::new_default(storage_key);
@@ -330,7 +348,7 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Clear an entire child storage.
-	///
+	/// 清除整个子存储。
 	/// If it exists, the child storage for `storage_key`
 	/// is removed.
 	fn storage_kill(&mut self, storage_key: &[u8]) {
@@ -362,7 +380,7 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Check a child storage key.
-	///
+	/// 判断存在与否
 	/// Check whether the given `key` exists in default child defined at `storage_key`.
 	fn exists(&self, storage_key: &[u8], key: &[u8]) -> bool {
 		let child_info = ChildInfo::new_default(storage_key);
@@ -370,7 +388,7 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Clear child default key by prefix.
-	///
+	/// 按前缀清除子默认键
 	/// Clear the child storage of each key-value pair where the key starts with the given `prefix`.
 	fn clear_prefix(&mut self, storage_key: &[u8], prefix: &[u8]) {
 		let child_info = ChildInfo::new_default(storage_key);
@@ -378,7 +396,7 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Clear the child storage of each key-value pair where the key starts with the given `prefix`.
-	///
+	/// 清除每个键值对的子存储，其中键以给定的“前缀”开头。
 	/// See `Storage` module `clear_prefix` documentation for `limit` usage.
 	#[version(2)]
 	fn clear_prefix(
@@ -396,22 +414,24 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Default child root calculation.
-	///
+	/// 默认子根计算
 	/// "Commit" all existing operations and compute the resulting child storage root.
 	/// The hashing algorithm is defined by the `Block`.
-	///
+	/// 提交”所有现有操作并计算生成的子存储根。哈希算法由“块”定义。
 	/// Returns a `Vec<u8>` that holds the SCALE encoded hash.
+	/// 返回保存 SCALE 编码哈希的 `Vec<u8>`。
 	fn root(&mut self, storage_key: &[u8]) -> Vec<u8> {
 		let child_info = ChildInfo::new_default(storage_key);
 		self.child_storage_root(&child_info, StateVersion::V0)
 	}
 
 	/// Default child root calculation.
-	///
+	/// 默认子根计算
 	/// "Commit" all existing operations and compute the resulting child storage root.
 	/// The hashing algorithm is defined by the `Block`.
-	///
+	/// “Commit”所有现有操作并计算生成的子存储根。哈希算法由“Block”定义。
 	/// Returns a `Vec<u8>` that holds the SCALE encoded hash.
+	/// 返回保存 SCALE 编码哈希的 `Vec<u8>`。
 	#[version(2)]
 	fn root(&mut self, storage_key: &[u8], version: StateVersion) -> Vec<u8> {
 		let child_info = ChildInfo::new_default(storage_key);
@@ -419,8 +439,9 @@ pub trait DefaultChildStorage {
 	}
 
 	/// Child storage key iteration.
-	///
+	/// 子存储键迭代。
 	/// Get the next key in storage after the given one in lexicographic order in child storage.
+	/// 在子存储中按字典顺序获取给定键之后的下一个存储键。
 	fn next_key(&mut self, storage_key: &[u8], key: &[u8]) -> Option<Vec<u8>> {
 		let child_info = ChildInfo::new_default(storage_key);
 		self.next_child_storage_key(&child_info, key)
@@ -428,14 +449,17 @@ pub trait DefaultChildStorage {
 }
 
 /// Interface that provides trie related functionality.
+/// 提供 trie 相关功能的接口。
 #[runtime_interface]
 pub trait Trie {
 	/// A trie root formed from the iterated items.
+	/// 由迭代项形成的 trie 根。
 	fn blake2_256_root(input: Vec<(Vec<u8>, Vec<u8>)>) -> H256 {
 		LayoutV0::<sp_core::Blake2Hasher>::trie_root(input)
 	}
 
 	/// A trie root formed from the iterated items.
+	/// 由迭代项形成的 trie 根。
 	#[version(2)]
 	fn blake2_256_root(input: Vec<(Vec<u8>, Vec<u8>)>, version: StateVersion) -> H256 {
 		match version {
@@ -445,11 +469,13 @@ pub trait Trie {
 	}
 
 	/// A trie root formed from the enumerated items.
+	/// 由枚举项形成的 trie 根。
 	fn blake2_256_ordered_root(input: Vec<Vec<u8>>) -> H256 {
 		LayoutV0::<sp_core::Blake2Hasher>::ordered_trie_root(input)
 	}
 
 	/// A trie root formed from the enumerated items.
+	/// 由枚举项形成的 trie 根。
 	#[version(2)]
 	fn blake2_256_ordered_root(input: Vec<Vec<u8>>, version: StateVersion) -> H256 {
 		match version {
@@ -459,11 +485,13 @@ pub trait Trie {
 	}
 
 	/// A trie root formed from the iterated items.
+	/// 由迭代项形成的 trie 根。
 	fn keccak_256_root(input: Vec<(Vec<u8>, Vec<u8>)>) -> H256 {
 		LayoutV0::<sp_core::KeccakHasher>::trie_root(input)
 	}
 
 	/// A trie root formed from the iterated items.
+	/// 由迭代项形成的 trie 根。
 	#[version(2)]
 	fn keccak_256_root(input: Vec<(Vec<u8>, Vec<u8>)>, version: StateVersion) -> H256 {
 		match version {
@@ -473,11 +501,13 @@ pub trait Trie {
 	}
 
 	/// A trie root formed from the enumerated items.
+	/// 由枚举项形成的 trie 根。
 	fn keccak_256_ordered_root(input: Vec<Vec<u8>>) -> H256 {
 		LayoutV0::<sp_core::KeccakHasher>::ordered_trie_root(input)
 	}
 
 	/// A trie root formed from the enumerated items.
+	/// 由枚举项组成的 trie 根。
 	#[version(2)]
 	fn keccak_256_ordered_root(input: Vec<Vec<u8>>, version: StateVersion) -> H256 {
 		match version {
@@ -487,6 +517,7 @@ pub trait Trie {
 	}
 
 	/// Verify trie proof
+	/// 验证trie证明
 	fn blake2_256_verify_proof(root: H256, proof: &[Vec<u8>], key: &[u8], value: &[u8]) -> bool {
 		sp_trie::verify_trie_proof::<LayoutV0<sp_core::Blake2Hasher>, _, _, _>(
 			&root,
@@ -563,6 +594,7 @@ pub trait Trie {
 
 /// Interface that provides miscellaneous functions for communicating between the runtime and the
 /// node.
+/// 为运行时和节点之间的通信提供各种功能的接口。
 #[runtime_interface]
 pub trait Misc {
 	// NOTE: We use the target 'runtime' for messages produced by general printing functions,
@@ -586,7 +618,7 @@ pub trait Misc {
 	}
 
 	/// Extract the runtime version of the given wasm blob by calling `Core_version`.
-	///
+	/// 通过调用 `Core_version` 提取给定 wasm blob 的运行时版本。
 	/// Returns `None` if calling the function failed for any reason or `Some(Vec<u8>)` where
 	/// the `Vec<u8>` holds the SCALE encoded runtime version.
 	///
@@ -624,9 +656,11 @@ pub trait Misc {
 }
 
 /// Interfaces for working with crypto related types from within the runtime.
+/// 用于在运行时中处理加密相关类型的接口
 #[runtime_interface]
 pub trait Crypto {
 	/// Returns all `ed25519` public keys for the given key id from the keystore.
+	/// 从密钥库中返回给定密钥 id 的所有 `ed25519` 公钥。
 	fn ed25519_public_keys(&mut self, id: KeyTypeId) -> Vec<ed25519::Public> {
 		let keystore = &***self
 			.extension::<KeystoreExt>()
@@ -636,10 +670,11 @@ pub trait Crypto {
 
 	/// Generate an `ed22519` key for the given key type using an optional `seed` and
 	/// store it in the keystore.
-	///
+	/// 使用可选的“种子”为给定的密钥类型生成一个“ed22519”密钥并将其存储在密钥库中。
 	/// The `seed` needs to be a valid utf8.
-	///
+	/// 种子必须是一个合法得utf8格式
 	/// Returns the public key.
+	/// 返回公钥
 	fn ed25519_generate(&mut self, id: KeyTypeId, seed: Option<Vec<u8>>) -> ed25519::Public {
 		let seed = seed.as_ref().map(|s| std::str::from_utf8(&s).expect("Seed is valid utf8!"));
 		let keystore = &***self
@@ -651,8 +686,9 @@ pub trait Crypto {
 
 	/// Sign the given `msg` with the `ed25519` key that corresponds to the given public key and
 	/// key type in the keystore.
-	///
+	/// 使用与密钥库中给定公钥和密钥类型相对应的 `ed25519` 密钥对给定的 `msg` 签名。
 	/// Returns the signature.
+	/// 返回签名
 	fn ed25519_sign(
 		&mut self,
 		id: KeyTypeId,
@@ -669,20 +705,23 @@ pub trait Crypto {
 	}
 
 	/// Verify `ed25519` signature.
-	///
-	/// Returns `true` when the verification was successful.
+	/// 验证“ed25519”签名。
+	/// returns `true` when the verification was successful.
+	/// 验证成功时返回 `true`。
 	fn ed25519_verify(sig: &ed25519::Signature, msg: &[u8], pub_key: &ed25519::Public) -> bool {
 		ed25519::Pair::verify(sig, msg, pub_key)
 	}
 
 	/// Register a `ed25519` signature for batch verification.
-	///
+	/// 注册一个 `ed25519` 签名以进行批量验证。
 	/// Batch verification must be enabled by calling [`start_batch_verify`].
 	/// If batch verification is not enabled, the signature will be verified immediatley.
 	/// To get the result of the batch verification, [`finish_batch_verify`]
 	/// needs to be called.
-	///
+	/// 必须通过调用 [`start_batch_verify`] 来启用批量验证。
+	/// 如果未启用批量验证，则将立即验证签名。要获得批量验证的结果，需要调用 [`finish_batch_verify`]。
 	/// Returns `true` when the verification is either successful or batched.
+	/// 当验证成功或批处理时返回 `true`。
 	fn ed25519_batch_verify(
 		&mut self,
 		sig: &ed25519::Signature,
@@ -695,7 +734,7 @@ pub trait Crypto {
 	}
 
 	/// Verify `sr25519` signature.
-	///
+	/// 验证`sr25519`签名
 	/// Returns `true` when the verification was successful.
 	#[version(2)]
 	fn sr25519_verify(sig: &sr25519::Signature, msg: &[u8], pub_key: &sr25519::Public) -> bool {
@@ -703,7 +742,7 @@ pub trait Crypto {
 	}
 
 	/// Register a `sr25519` signature for batch verification.
-	///
+	/// 批量验证`sr25519`签名
 	/// Batch verification must be enabled by calling [`start_batch_verify`].
 	/// If batch verification is not enabled, the signature will be verified immediatley.
 	/// To get the result of the batch verification, [`finish_batch_verify`]
@@ -722,6 +761,7 @@ pub trait Crypto {
 	}
 
 	/// Start verification extension.
+	/// 启动验证扩展
 	fn start_batch_verify(&mut self) {
 		let scheduler = self
 			.extension::<TaskExecutorExt>()
@@ -733,11 +773,12 @@ pub trait Crypto {
 	}
 
 	/// Finish batch-verification of signatures.
-	///
+	/// 完成签名的批量验证
 	/// Verify or wait for verification to finish for all signatures which were previously
 	/// deferred by `sr25519_verify`/`ed25519_verify`.
-	///
+	/// 验证或等待验证完成之前由 sr25519_verify/ed25519_verify 延迟的所有签名。
 	/// Will panic if no `VerificationExt` is registered (`start_batch_verify` was not called).
+	/// 如果没有注册 `VerificationExt` 会出现恐慌（`start_batch_verify` 没有被调用）。
 	fn finish_batch_verify(&mut self) -> bool {
 		let result = self
 			.extension::<VerificationExt>()
@@ -751,6 +792,7 @@ pub trait Crypto {
 	}
 
 	/// Returns all `sr25519` public keys for the given key id from the keystore.
+	/// 从密钥库中返回给定密钥 id 的所有 `sr25519` 公钥。
 	fn sr25519_public_keys(&mut self, id: KeyTypeId) -> Vec<sr25519::Public> {
 		let keystore = &***self
 			.extension::<KeystoreExt>()
@@ -760,7 +802,7 @@ pub trait Crypto {
 
 	/// Generate an `sr22519` key for the given key type using an optional seed and
 	/// store it in the keystore.
-	///
+	/// 使用可选种子为给定密钥类型生成“sr22519”密钥并将其存储在密钥库中。
 	/// The `seed` needs to be a valid utf8.
 	///
 	/// Returns the public key.
@@ -775,7 +817,7 @@ pub trait Crypto {
 
 	/// Sign the given `msg` with the `sr25519` key that corresponds to the given public key and
 	/// key type in the keystore.
-	///
+	/// 使用与密钥库中给定的公钥和密钥类型对应的 sr25519 密钥对给定的 msg 进行签名。
 	/// Returns the signature.
 	fn sr25519_sign(
 		&mut self,
@@ -793,7 +835,7 @@ pub trait Crypto {
 	}
 
 	/// Verify an `sr25519` signature.
-	///
+	/// 验证`sr25519`签名
 	/// Returns `true` when the verification in successful regardless of
 	/// signature version.
 	fn sr25519_verify(sig: &sr25519::Signature, msg: &[u8], pubkey: &sr25519::Public) -> bool {
@@ -801,6 +843,7 @@ pub trait Crypto {
 	}
 
 	/// Returns all `ecdsa` public keys for the given key id from the keystore.
+	/// 从密钥库中返回给定密钥 ID 的所有“ecdsa”公钥。
 	fn ecdsa_public_keys(&mut self, id: KeyTypeId) -> Vec<ecdsa::Public> {
 		let keystore = &***self
 			.extension::<KeystoreExt>()
@@ -810,7 +853,7 @@ pub trait Crypto {
 
 	/// Generate an `ecdsa` key for the given key type using an optional `seed` and
 	/// store it in the keystore.
-	///
+	/// 使用可选的“种子”为给定的密钥类型生成一个“ecdsa”密钥，并将其存储在密钥库中。
 	/// The `seed` needs to be a valid utf8.
 	///
 	/// Returns the public key.
@@ -824,7 +867,7 @@ pub trait Crypto {
 
 	/// Sign the given `msg` with the `ecdsa` key that corresponds to the given public key and
 	/// key type in the keystore.
-	///
+	/// 使用与密钥库中给定的公钥和密钥类型相对应的 ecdsa 密钥对给定的 msg 进行签名。
 	/// Returns the signature.
 	fn ecdsa_sign(
 		&mut self,
@@ -843,7 +886,7 @@ pub trait Crypto {
 
 	/// Sign the given a pre-hashed `msg` with the `ecdsa` key that corresponds to the given public
 	/// key and key type in the keystore.
-	///
+	/// 使用与密钥库中给定的公钥和密钥类型相对应的 ecdsa 密钥对给定的预散列的 msg 进行签名。
 	/// Returns the signature.
 	fn ecdsa_sign_prehashed(
 		&mut self,
@@ -875,7 +918,7 @@ pub trait Crypto {
 	}
 
 	/// Verify `ecdsa` signature with pre-hashed `msg`.
-	///
+	/// 使用预先散列的 `msg` 验证 `ecdsa` 签名。
 	/// Returns `true` when the verification was successful.
 	fn ecdsa_verify_prehashed(
 		sig: &ecdsa::Signature,
@@ -886,7 +929,7 @@ pub trait Crypto {
 	}
 
 	/// Register a `ecdsa` signature for batch verification.
-	///
+	/// 注册一个 `ecdsa` 签名以进行批量验证。
 	/// Batch verification must be enabled by calling [`start_batch_verify`].
 	/// If batch verification is not enabled, the signature will be verified immediatley.
 	/// To get the result of the batch verification, [`finish_batch_verify`]
@@ -905,10 +948,11 @@ pub trait Crypto {
 	}
 
 	/// Verify and recover a SECP256k1 ECDSA signature.
-	///
+	/// 验证并恢复 SECP256k1 ECDSA 签名。
 	/// - `sig` is passed in RSV format. V should be either `0/1` or `27/28`.
 	/// - `msg` is the blake2-256 hash of the message.
-	///
+	/// - `sig` 以 RSV 格式传递。 V 应该是“01”或“2728”。
+	/// - `msg` 是消息的 blake2-256 哈希值。
 	/// Returns `Err` if the signature is bad, otherwise the 64-byte pubkey
 	/// (doesn't include the 0x04 prefix).
 	/// This version is able to handle, non-standard, overflowing signatures.
@@ -1001,9 +1045,11 @@ pub trait Crypto {
 }
 
 /// Interface that provides functions for hashing with different algorithms.
+/// 提供使用不同算法进行散列的函数的接口。
 #[runtime_interface]
 pub trait Hashing {
 	/// Conduct a 256-bit Keccak hash.
+	/// 执行 256 位 Keccak 哈希。
 	fn keccak_256(data: &[u8]) -> [u8; 32] {
 		sp_core::hashing::keccak_256(data)
 	}
@@ -1045,23 +1091,28 @@ pub trait Hashing {
 }
 
 /// Interface that provides transaction indexing API.
+/// 提供事务索引 API 的接口。
 #[runtime_interface]
 pub trait TransactionIndex {
 	/// Add transaction index. Returns indexed content hash.
+	/// 添加交易索引。返回索引的内容哈希。
 	fn index(&mut self, extrinsic: u32, size: u32, context_hash: [u8; 32]) {
 		self.storage_index_transaction(extrinsic, &context_hash, size);
 	}
 
 	/// Conduct a 512-bit Keccak hash.
+	/// 执行 512 位 Keccak 哈希。
 	fn renew(&mut self, extrinsic: u32, context_hash: [u8; 32]) {
 		self.storage_renew_transaction_index(extrinsic, &context_hash);
 	}
 }
 
 /// Interface that provides functions to access the Offchain DB.
+/// 提供访问 Offchain DB 的功能的接口。
 #[runtime_interface]
 pub trait OffchainIndex {
 	/// Write a key value pair to the Offchain DB database in a buffered fashion.
+	/// 以缓冲方式将键值对写入 Offchain DB 数据库。
 	fn set(&mut self, key: &[u8], value: &[u8]) {
 		self.set_offchain_storage(key, Some(value));
 	}
@@ -1075,18 +1126,21 @@ pub trait OffchainIndex {
 #[cfg(feature = "std")]
 sp_externalities::decl_extension! {
 	/// Batch verification extension to register/retrieve from the externalities.
+	/// 从外部性中注册检索的批量验证扩展。
 	pub struct VerificationExt(BatchVerifier);
 }
 
 /// Interface that provides functions to access the offchain functionality.
-///
+/// 提供访问链下功能的功能的接口
 /// These functions are being made available to the runtime and are called by the runtime.
+/// 这些函数可供运行时使用并由运行时调用。
 #[runtime_interface]
 pub trait Offchain {
 	/// Returns if the local node is a potential validator.
-	///
+	/// 返回本地节点是否是潜在的验证者。
 	/// Even if this function returns `true`, it does not mean that any keys are configured
 	/// and that the validator is registered in the chain.
+	/// 即使此函数返回 `true`，也不意味着配置了任何密钥并且验证器已在链中注册。
 	fn is_validator(&mut self) -> bool {
 		self.extension::<OffchainWorkerExt>()
 			.expect("is_validator can be called only in the offchain worker context")
@@ -1094,8 +1148,9 @@ pub trait Offchain {
 	}
 
 	/// Submit an encoded transaction to the pool.
-	///
+	/// 将编码交易提交到池中。
 	/// The transaction will end up in the pool.
+	/// 交易将最终进入池中。
 	fn submit_transaction(&mut self, data: Vec<u8>) -> Result<(), ()> {
 		self.extension::<TransactionPoolExt>()
 			.expect(
@@ -1106,6 +1161,7 @@ pub trait Offchain {
 	}
 
 	/// Returns information about the local node's network state.
+	/// 返回有关本地节点网络状态的信息。
 	fn network_state(&mut self) -> Result<OpaqueNetworkState, ()> {
 		self.extension::<OffchainWorkerExt>()
 			.expect("network_state can be called only in the offchain worker context")
@@ -1113,6 +1169,7 @@ pub trait Offchain {
 	}
 
 	/// Returns current UNIX timestamp (in millis)
+	/// 返回当前unix时间戳
 	fn timestamp(&mut self) -> Timestamp {
 		self.extension::<OffchainWorkerExt>()
 			.expect("timestamp can be called only in the offchain worker context")
@@ -1120,6 +1177,7 @@ pub trait Offchain {
 	}
 
 	/// Pause the execution until `deadline` is reached.
+	/// 暂停执行，直到达到 `deadline`。
 	fn sleep_until(&mut self, deadline: Timestamp) {
 		self.extension::<OffchainWorkerExt>()
 			.expect("sleep_until can be called only in the offchain worker context")
@@ -1127,9 +1185,10 @@ pub trait Offchain {
 	}
 
 	/// Returns a random seed.
-	///
+	/// 返回一个随机种子。
 	/// This is a truly random, non-deterministic seed generated by host environment.
 	/// Obviously fine in the off-chain worker context.
+	/// 这是由宿主环境生成的真正随机的、非确定性的种子。在链下工作者环境中显然很好。
 	fn random_seed(&mut self) -> [u8; 32] {
 		self.extension::<OffchainWorkerExt>()
 			.expect("random_seed can be called only in the offchain worker context")
@@ -1137,9 +1196,10 @@ pub trait Offchain {
 	}
 
 	/// Sets a value in the local storage.
-	///
+	/// 在本地存储中设置一个值。
 	/// Note this storage is not part of the consensus, it's only accessible by
 	/// offchain worker tasks running on the same machine. It IS persisted between runs.
+	/// 请注意，此存储不是共识的一部分，它只能由在同一台机器上运行的脱链工作任务访问。它在运行之间持续存在。
 	fn local_storage_set(&mut self, kind: StorageKind, key: &[u8], value: &[u8]) {
 		self.extension::<OffchainDbExt>()
 			.expect(
@@ -1150,7 +1210,7 @@ pub trait Offchain {
 	}
 
 	/// Remove a value from the local storage.
-	///
+	/// 从本地存储中删除一个值。
 	/// Note this storage is not part of the consensus, it's only accessible by
 	/// offchain worker tasks running on the same machine. It IS persisted between runs.
 	fn local_storage_clear(&mut self, kind: StorageKind, key: &[u8]) {
@@ -1163,10 +1223,10 @@ pub trait Offchain {
 	}
 
 	/// Sets a value in the local storage if it matches current value.
-	///
+	/// 如果与当前值匹配，则在本地存储中设置一个值。
 	/// Since multiple offchain workers may be running concurrently, to prevent
 	/// data races use CAS to coordinate between them.
-	///
+	/// 由于多个链下工作人员可能同时运行，为了防止数据竞争，使用 CAS 在它们之间进行协调。
 	/// Returns `true` if the value has been set, `false` otherwise.
 	///
 	/// Note this storage is not part of the consensus, it's only accessible by
@@ -1187,7 +1247,7 @@ pub trait Offchain {
 	}
 
 	/// Gets a value from the local storage.
-	///
+	/// 从本地存储中获取一个值。
 	/// If the value does not exist in the storage `None` will be returned.
 	/// Note this storage is not part of the consensus, it's only accessible by
 	/// offchain worker tasks running on the same machine. It IS persisted between runs.
@@ -1201,7 +1261,7 @@ pub trait Offchain {
 	}
 
 	/// Initiates a http request given HTTP verb and the URL.
-	///
+	/// 在给定 HTTP 动词和 URL 的情况下发起一个 http 请求。
 	/// Meta is a future-reserved field containing additional, parity-scale-codec encoded
 	/// parameters. Returns the id of newly started request.
 	fn http_request_start(
@@ -1228,11 +1288,12 @@ pub trait Offchain {
 	}
 
 	/// Write a chunk of request body.
-	///
+	/// 写一大块请求正文。
 	/// Writing an empty chunks finalizes the request.
 	/// Passing `None` as deadline blocks forever.
-	///
+	/// 写一个空的块来完成请求。将“None”作为截止日期永远阻塞。
 	/// Returns an error in case deadline is reached or the chunk couldn't be written.
+	/// 如果达到最后期限或无法写入块，则返回错误。
 	fn http_request_write_body(
 		&mut self,
 		request_id: HttpRequestId,
@@ -1245,7 +1306,7 @@ pub trait Offchain {
 	}
 
 	/// Block and wait for the responses for given requests.
-	///
+	/// 阻止并等待给定请求的响应。
 	/// Returns a vector of request statuses (the len is the same as ids).
 	/// Note that if deadline is not provided the method will block indefinitely,
 	/// otherwise unready responses will produce `DeadlineReached` status.
@@ -1262,7 +1323,7 @@ pub trait Offchain {
 	}
 
 	/// Read all response headers.
-	///
+	/// 读取所有响应标头
 	/// Returns a vector of pairs `(HeaderKey, HeaderValue)`.
 	/// NOTE response headers have to be read before response body.
 	fn http_response_headers(&mut self, request_id: HttpRequestId) -> Vec<(Vec<u8>, Vec<u8>)> {
@@ -1272,13 +1333,16 @@ pub trait Offchain {
 	}
 
 	/// Read a chunk of body response to given buffer.
-	///
+	/// 读取给定缓冲区的主体响应块。
 	/// Returns the number of bytes written or an error in case a deadline
 	/// is reached or server closed the connection.
 	/// If `0` is returned it means that the response has been fully consumed
 	/// and the `request_id` is now invalid.
 	/// NOTE this implies that response headers must be read before draining the body.
 	/// Passing `None` as a deadline blocks forever.
+	/// 如果达到最后期限或服务器关闭连接，则返回写入的字节数或错误。
+	/// 如果返回“0”，则表示响应已被完全消耗，“request_id”现在无效。
+	/// 注意这意味着必须在耗尽正文之前读取响应标头
 	fn http_response_read_body(
 		&mut self,
 		request_id: HttpRequestId,
@@ -1292,6 +1356,7 @@ pub trait Offchain {
 	}
 
 	/// Set the authorized nodes and authorized_only flag.
+	/// 设置授权节点和 authorized_only 标志。
 	fn set_authorized_nodes(&mut self, nodes: Vec<OpaquePeerId>, authorized_only: bool) {
 		self.extension::<OffchainWorkerExt>()
 			.expect("set_authorized_nodes can be called only in the offchain worker context")
@@ -1300,14 +1365,17 @@ pub trait Offchain {
 }
 
 /// Wasm only interface that provides functions for calling into the allocator.
+/// Wasm 唯一的接口，提供调用分配器的函数。
 #[runtime_interface(wasm_only)]
 pub trait Allocator {
 	/// Malloc the given number of bytes and return the pointer to the allocated memory location.
+	/// malloc 给定的字节数并返回指向已分配内存位置的指针。
 	fn malloc(&mut self, size: u32) -> Pointer<u8> {
 		self.allocate_memory(size).expect("Failed to allocate memory")
 	}
 
 	/// Free the given pointer.
+	/// 释放给定的指针。
 	fn free(&mut self, ptr: Pointer<u8>) {
 		self.deallocate_memory(ptr).expect("Failed to deallocate memory")
 	}
@@ -1315,9 +1383,11 @@ pub trait Allocator {
 
 /// WASM-only interface which allows for aborting the execution in case
 /// of an unrecoverable error.
+/// 仅 WASM 接口，允许在出现不可恢复的错误时中止执行。
 #[runtime_interface(wasm_only)]
 pub trait PanicHandler {
 	/// Aborts the current execution with the given error message.
+	/// 使用给定的错误消息中止当前执行
 	#[trap_on_return]
 	fn abort_on_panic(&mut self, message: &str) {
 		self.register_panic_error_message(message);
@@ -1325,10 +1395,11 @@ pub trait PanicHandler {
 }
 
 /// Interface that provides functions for logging from within the runtime.
+/// 提供从运行时内进行日志记录的功能的接口。
 #[runtime_interface]
 pub trait Logging {
 	/// Request to print a log message on the host.
-	///
+	/// 请求在主机上打印日志消息
 	/// Note that this will be only displayed if the host is enabled to display log messages with
 	/// given level and target.
 	///
@@ -1348,6 +1419,7 @@ pub trait Logging {
 #[derive(Encode, Decode)]
 /// Crossing is a helper wrapping any Encode-Decodeable type
 /// for transferring over the wasm barrier.
+/// Crossing 是包装任何 Encode-Decodeable 类型的助手，用于在 wasm 屏障上传输。
 pub struct Crossing<T: Encode + Decode>(T);
 
 impl<T: Encode + Decode> PassBy for Crossing<T> {
@@ -1373,6 +1445,7 @@ where
 
 /// Interface to provide tracing facilities for wasm. Modelled after tokios `tracing`-crate
 /// interfaces. See `sp-tracing` for more information.
+/// 为 wasm 提供跟踪工具的接口。模仿 tokios `tracing`-crate 接口。有关更多信息，请参阅`sp-tracing`。
 #[runtime_interface(wasm_only, no_tracing)]
 pub trait WasmTracing {
 	/// Whether the span described in `WasmMetadata` should be traced wasm-side
@@ -1490,9 +1563,11 @@ mod tracing_setup {
 pub use tracing_setup::init_tracing;
 
 /// Wasm-only interface that provides functions for interacting with the sandbox.
+/// 仅 Wasm 接口，提供与沙箱交互的功能。
 #[runtime_interface(wasm_only)]
 pub trait Sandbox {
 	/// Instantiate a new sandbox instance with the given `wasm_code`.
+	/// 使用给定的 `wasm_code` 实例化一个新的沙箱实例。
 	fn instantiate(
 		&mut self,
 		dispatch_thunk: u32,
@@ -1506,6 +1581,7 @@ pub trait Sandbox {
 	}
 
 	/// Invoke `function` in the sandbox with `sandbox_idx`.
+	/// 使用 `sandbox_idx` 在沙箱中调用 `function`。
 	fn invoke(
 		&mut self,
 		instance_idx: u32,
@@ -1528,6 +1604,7 @@ pub trait Sandbox {
 	}
 
 	/// Create a new memory instance with the given `initial` and `maximum` size.
+	/// 使用给定的“初始”和“最大”大小创建一个新的内存实例。
 	fn memory_new(&mut self, initial: u32, maximum: u32) -> u32 {
 		self.sandbox()
 			.memory_new(initial, maximum)
@@ -1535,6 +1612,7 @@ pub trait Sandbox {
 	}
 
 	/// Get the memory starting at `offset` from the instance with `memory_idx` into the buffer.
+	/// 从带有 `memory_idx` 的实例中获取从 `offset` 开始的内存到缓冲区中。
 	fn memory_get(
 		&mut self,
 		memory_idx: u32,
@@ -1548,6 +1626,7 @@ pub trait Sandbox {
 	}
 
 	/// Set the memory in the given `memory_idx` to the given value at `offset`.
+	/// 将给定 `memory_idx` 中的内存设置为 `offset` 处的给定值。
 	fn memory_set(
 		&mut self,
 		memory_idx: u32,
@@ -1561,6 +1640,7 @@ pub trait Sandbox {
 	}
 
 	/// Teardown the memory instance with the given `memory_idx`.
+	/// 使用给定的 `memory_idx` 拆除内存实例。
 	fn memory_teardown(&mut self, memory_idx: u32) {
 		self.sandbox()
 			.memory_teardown(memory_idx)
@@ -1568,6 +1648,7 @@ pub trait Sandbox {
 	}
 
 	/// Teardown the sandbox instance with the given `instance_idx`.
+	/// 使用给定的“instance_idx”拆除沙箱实例。
 	fn instance_teardown(&mut self, instance_idx: u32) {
 		self.sandbox()
 			.instance_teardown(instance_idx)
@@ -1576,8 +1657,9 @@ pub trait Sandbox {
 
 	/// Get the value from a global with the given `name`. The sandbox is determined by the given
 	/// `instance_idx`.
-	///
+	/// 从具有给定“名称”的全局变量中获取值。沙箱由给定的“instance_idx”决定。
 	/// Returns `Some(_)` when the requested global variable could be found.
+	/// 当可以找到请求的全局变量时返回 `Some(_)`。
 	fn get_global_val(
 		&mut self,
 		instance_idx: u32,
@@ -1590,12 +1672,13 @@ pub trait Sandbox {
 }
 
 /// Wasm host functions for managing tasks.
-///
+/// 用于管理任务的 Wasm 主机功能。
 /// This should not be used directly. Use `sp_tasks` for running parallel tasks instead.
+/// 这不应该直接使用。改为使用 `sp_tasks` 来运行并行任务。
 #[runtime_interface(wasm_only)]
 pub trait RuntimeTasks {
 	/// Wasm host function for spawning task.
-	///
+	/// 用于生成任务的 Wasm 主机功能。
 	/// This should not be used directly. Use `sp_tasks::spawn` instead.
 	fn spawn(dispatcher_ref: u32, entry: u32, payload: Vec<u8>) -> u64 {
 		sp_externalities::with_externalities(|mut ext| {
@@ -1608,7 +1691,7 @@ pub trait RuntimeTasks {
 	}
 
 	/// Wasm host function for joining a task.
-	///
+	/// 用于加入任务的 Wasm 主机功能。
 	/// This should not be used directly. Use `join` of `sp_tasks::spawn` result instead.
 	fn join(handle: u64) -> Vec<u8> {
 		sp_externalities::with_externalities(|mut ext| {
@@ -1622,6 +1705,7 @@ pub trait RuntimeTasks {
 }
 
 /// Allocator used by Substrate when executing the Wasm runtime.
+/// Substrate 在执行 Wasm 运行时时使用的分配器。
 #[cfg(all(target_arch = "wasm32", not(feature = "std")))]
 struct WasmAllocator;
 
@@ -1646,6 +1730,7 @@ mod allocator_impl {
 }
 
 /// A default panic handler for WASM environment.
+/// WASM 环境的默认恐慌处理程序。
 #[cfg(all(not(feature = "disable_panic_handler"), not(feature = "std")))]
 #[panic_handler]
 #[no_mangle]
@@ -1663,6 +1748,7 @@ pub fn panic(info: &core::panic::PanicInfo) -> ! {
 }
 
 /// A default OOM handler for WASM environment.
+/// WASM 环境的默认 OOM 处理程序。
 #[cfg(all(not(feature = "disable_oom"), not(feature = "std")))]
 #[alloc_error_handler]
 pub fn oom(_: core::alloc::Layout) -> ! {
@@ -1678,12 +1764,14 @@ pub fn oom(_: core::alloc::Layout) -> ! {
 }
 
 /// Type alias for Externalities implementation used in tests.
+/// 测试中使用的 Externalities 实现的类型别名。
 #[cfg(feature = "std")]
 pub type TestExternalities = sp_state_machine::TestExternalities<sp_core::Blake2Hasher>;
 
 /// The host functions Substrate provides for the Wasm runtime environment.
-///
+/// Substrate 为 Wasm 运行时环境提供的宿主函数。
 /// All these host functions will be callable from inside the Wasm environment.
+/// 所有这些主机函数都可以从 Wasm 环境内部调用。
 #[cfg(feature = "std")]
 pub type SubstrateHostFunctions = (
 	storage::HostFunctions,

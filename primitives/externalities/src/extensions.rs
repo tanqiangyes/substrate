@@ -16,11 +16,12 @@
 // limitations under the License.
 
 //! Externalities extensions storage.
-//!
+//! 外部性扩展存储
 //! Externalities support to register a wide variety custom extensions. The [`Extensions`] provides
 //! some convenience functionality to store and retrieve these extensions.
-//!
+//! 外部性支持注册各种自定义扩展。 [`Extensions`] 提供一些方便的功能来存储和检索这些扩展。
 //! It is required that each extension implements the [`Extension`] trait.
+//! 每个扩展都需要实现 [`Extension`] 特征。
 
 use crate::Error;
 use sp_std::{
