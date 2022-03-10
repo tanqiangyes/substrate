@@ -16,9 +16,9 @@
 // limitations under the License.
 
 //! Runtime tasks.
-//!
+//! 运行时任务
 //! Contains runtime-usable functions for spawning parallel purely computational tasks.
-//!
+//! 包含运行时可用的函数，用于生成并行的纯计算任务。
 //! NOTE: This is experimental API.
 //! NOTE: When using in actual runtime, make sure you don't produce unbounded parallelism.
 //! So this is bad example to use it:
@@ -65,9 +65,10 @@ mod inner {
 	use std::{panic::AssertUnwindSafe, sync::mpsc};
 
 	/// Task handle (wasm).
-	///
+	/// 任务句柄（wasm）。
 	/// This can be `join`-ed to get (blocking) the result of
 	/// the spawned task execution.
+	/// 这可以是 `join`-ed 以获取（阻塞）生成的任务执行的结果。
 	#[must_use]
 	pub struct DataJoinHandle {
 		receiver: mpsc::Receiver<Vec<u8>>,
@@ -75,6 +76,7 @@ mod inner {
 
 	impl DataJoinHandle {
 		/// Join handle returned by `spawn` function
+		/// `spawn` 函数返回的加入句柄
 		pub fn join(self) -> Vec<u8> {
 			self.receiver
 				.recv()
@@ -83,6 +85,7 @@ mod inner {
 	}
 
 	/// Spawn new runtime task (native).
+	/// 产生新的运行时任务（本机）。
 	pub fn spawn(entry_point: fn(Vec<u8>) -> Vec<u8>, data: Vec<u8>) -> DataJoinHandle {
 		let scheduler = sp_externalities::with_externalities(|mut ext| {
 			ext.extension::<TaskExecutorExt>()
@@ -144,15 +147,16 @@ mod inner {
 	use sp_std::prelude::*;
 
 	/// Dispatch wrapper for wasm blob.
-	///
+	/// wasm blob 的调度包装器。
 	/// Serves as trampoline to call any rust function with (Vec<u8>) -> Vec<u8> compiled
 	/// into the runtime.
-	///
+	/// 用作蹦床来调用任何具有 (Vec<u8>) -> Vec<u8> 编译到运行时的 rust 函数。
 	/// Function item should be provided with `func_ref`. Argument for the call
 	/// will be generated from bytes at `payload_ptr` with `payload_len`.
-	///
+	/// 函数项应与 `func_ref` 一起提供。调用的参数将由 `payload_ptr` 和 `payload_len` 的字节生成。
 	/// NOTE: Since this dynamic dispatch function and the invoked function are compiled with
 	/// the same compiler, there should be no problem with ABI incompatibility.
+	/// 注意：由于这个动态调度函数和被调用函数是用同一个编译器编译的，所以应该没有ABI不兼容的问题。
 	extern "C" fn dispatch_wrapper(
 		func_ref: *const u8,
 		payload_ptr: *mut u8,

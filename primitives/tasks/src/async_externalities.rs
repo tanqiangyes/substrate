@@ -17,6 +17,7 @@
 // along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 //! Async externalities.
+//! 异步外部性。
 
 use sp_core::{
 	storage::{ChildInfo, StateVersion, TrackedStorageKey},
@@ -26,14 +27,16 @@ use sp_externalities::{Extensions, ExternalitiesExt as _};
 use std::any::{Any, TypeId};
 
 /// Simple state-less externalities for use in async context.
-///
+/// 用于异步上下文的简单无状态外部性。
 /// Will panic if anything is accessing the storage.
+/// 如果有任何东西正在访问存储，将会panic。
 #[derive(Debug)]
 pub struct AsyncExternalities {
 	extensions: Extensions,
 }
 
 /// New Async externalities.
+/// 新的异步外部性。
 pub fn new_async_externalities(
 	scheduler: Box<dyn SpawnNamed>,
 ) -> Result<AsyncExternalities, &'static str> {
@@ -47,6 +50,7 @@ pub fn new_async_externalities(
 
 impl AsyncExternalities {
 	/// Extend async externalities with the ability to spawn wasm instances.
+	/// 通过生成 wasm 实例的能力扩展异步外部性。
 	pub fn with_runtime_spawn(
 		mut self,
 		runtime_ext: Box<dyn RuntimeSpawn>,
