@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! I/O host interface for substrate runtime.
+//! 用于substrate运行时的 IO 主机接口
 
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -85,30 +86,39 @@ use batch_verifier::BatchVerifier;
 const LOG_TARGET: &str = "runtime::io";
 
 /// Error verifying ECDSA signature
+/// 验证ECDSA签名的错误类型
 #[derive(Encode, Decode)]
 pub enum EcdsaVerifyError {
 	/// Incorrect value of R or S
+	/// R或者S错误
 	BadRS,
 	/// Incorrect value of V
+	/// 错误的V
 	BadV,
 	/// Invalid signature
+	/// 不合法的签名
 	BadSignature,
 }
 
 /// The outcome of calling `storage_kill`. Returned value is the number of storage items
 /// removed from the backend from making the `storage_kill` call.
+/// 调用 `storage_kill` 的结果。返回值是从后端删除的存储项目的数量，从调用 `storage_kill` 调用。
 #[derive(PassByCodec, Encode, Decode)]
 pub enum KillStorageResult {
 	/// All key to remove were removed, return number of key removed from backend.
+	/// 全部被移除，返回关键字移除的数量
 	AllRemoved(u32),
 	/// Not all key to remove were removed, return number of key removed from backend.
+	/// 不是所有的都被移除，返回被移除的数量
 	SomeRemaining(u32),
 }
 
 /// Interface for accessing the storage from within the runtime.
+/// 用于从运行时访问存储的接口。
 #[runtime_interface]
 pub trait Storage {
 	/// Returns the data for `key` in the storage or `None` if the key can not be found.
+	/// 如果找到"key"，则返回存储中“key”的数据或“None”。
 	fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
 		self.storage(key).map(|s| s.to_vec())
 	}
@@ -118,6 +128,8 @@ pub trait Storage {
 	/// doesn't exist at all.
 	/// If `value_out` length is smaller than the returned length, only `value_out` length bytes
 	/// are copied into `value_out`.
+	/// 从存储中获取 `key`，将值放入 `value_out` 并返回存储中的条目超出偏移量的字节数，如果存储条目根本不存在，则返回 `None`。
+	/// 如果 `value_out` 长度小于返回的长度，则只有 `value_out` 长度字节被复制到 `value_out` 中。
 	fn read(&self, key: &[u8], value_out: &mut [u8], value_offset: u32) -> Option<u32> {
 		self.storage(key).map(|value| {
 			let value_offset = value_offset as usize;

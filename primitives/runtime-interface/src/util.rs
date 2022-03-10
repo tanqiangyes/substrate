@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Various utilities that help interfacing with wasm runtime code.
+//! 帮助与 wasm 运行时代码交互的各种实用程序。
 
 /// Pack a pointer and length into an `u64`.
 pub fn pack_ptr_and_len(ptr: u32, len: u32) -> u64 {

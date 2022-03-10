@@ -17,8 +17,9 @@
 
 //! Provides the [`PassBy`](PassBy) trait to simplify the implementation of the
 //! runtime interface traits for custom types.
-//!
+//! 提供 [`PassBy`](PassBy) 特征以简化自定义类型的运行时接口特征。
 //! [`Codec`], [`Inner`] and [`Enum`] are the provided strategy implementations.
+//! [`Codec`]、[`Inner`] 和 [`Enum`] 是提供的策略实现。
 
 use crate::{
 	util::{pack_ptr_and_len, unpack_ptr_and_len},
@@ -105,29 +106,34 @@ pub use sp_runtime_interface_proc_macro::PassByInner;
 pub use sp_runtime_interface_proc_macro::PassByEnum;
 
 /// Something that should be passed between wasm and the host using the given strategy.
-///
+/// 应该使用给定策略在 wasm 和主机之间传递的东西。
 /// See [`Codec`], [`Inner`] or [`Enum`] for more information about the provided strategies.
+/// 有关所提供策略的更多信息，请参阅 [`Codec`]、[`Inner`] 或 [`Enum`]。
 pub trait PassBy: Sized {
 	/// The strategy that should be used to pass the type.
+	/// 应该用于传递类型的策略。
 	type PassBy: PassByImpl<Self>;
 }
 
 /// Something that provides a strategy for passing a type between wasm and the host.
-///
+/// 提供在 wasm 和主机之间传递类型的策略的东西。
 /// This trait exposes the same functionality as [`crate::host::IntoFFIValue`] and
 /// [`crate::host::FromFFIValue`] to delegate the implementation for a type to a different type.
-///
+/// 此 trait 公开了与 [`crate::host::IntoFFIValue`] 和 [`crate::host::FromFFIValue`] 相同的功能，以将类型的实现委托给不同的类型。
 /// This trait is used for the host implementation.
+/// 此特征用于主机实现。
 #[cfg(feature = "std")]
 pub trait PassByImpl<T>: RIType {
 	/// Convert the given instance to the ffi value.
-	///
+	/// 将给定实例转换为 ffi 值。
 	/// For more information see: [`crate::host::IntoFFIValue::into_ffi_value`]
+	/// 更多信息参见：[`crate::host::IntoFFIValue::into_ffi_value`]
 	fn into_ffi_value(instance: T, context: &mut dyn FunctionContext) -> Result<Self::FFIType>;
 
 	/// Create `T` from the given ffi value.
-	///
+	/// 从给定的 ffi 值创建“T”。
 	/// For more information see: [`crate::host::FromFFIValue::from_ffi_value`]
+	/// 更多信息参见：[`crate::host::FromFFIValue::from_ffi_value`]
 	fn from_ffi_value(context: &mut dyn FunctionContext, arg: Self::FFIType) -> Result<T>;
 }
 
@@ -143,7 +149,7 @@ pub trait PassByImpl<T>: RIType {
 	type Owned;
 
 	/// Convert the given `instance` into [`crate::wasm::WrappedFFIValue`].
-	///
+	/// 将给定的 `instance` 转换为 [`crate::wasm::WrappedFFIValue`]。
 	/// For more information see: [`crate::wasm::IntoFFIValue::into_ffi_value`]
 	fn into_ffi_value(instance: &T) -> WrappedFFIValue<Self::FFIType, Self::Owned>;
 
@@ -197,13 +203,13 @@ impl<T: PassBy> FromFFIValue for T {
 
 /// The implementation of the pass by codec strategy. This strategy uses a SCALE encoded
 /// representation of the type between wasm and the host.
-///
+/// pass by codec 策略的实现。此策略使用 wasm 和主机之间类型的 SCALE 编码表示。
 /// Use this type as associated type for [`PassBy`] to implement this strategy for a type.
-///
+/// 使用此类型作为 [`PassBy`] 的关联类型来为类型实现此策略。
 /// This type expects the type that wants to implement this strategy as generic parameter.
-///
+/// 此类型需要想要实现此策略的类型作为泛型参数。
 /// [`PassByCodec`](derive.PassByCodec.html) is a derive macro to implement this strategy.
-///
+/// [`PassByCodec`](derive.PassByCodec.html) 是一个派生宏来实现这个策略。
 /// # Example
 /// ```
 /// # use sp_runtime_interface::pass_by::{PassBy, Codec};
@@ -268,6 +274,7 @@ impl<T: codec::Codec> RIType for Codec<T> {
 
 /// Trait that needs to be implemented by a type that should be passed between wasm and the host,
 /// by using the inner type. See [`Inner`] for more information.
+/// 需要通过使用内部类型在 wasm 和主机之间传递的类型来实现的特征。有关详细信息，请参阅 [`Inner`]。
 pub trait PassByInner: Sized {
 	/// The inner type that is wrapped by `Self`.
 	type Inner: RIType;
@@ -285,15 +292,15 @@ pub trait PassByInner: Sized {
 /// The implementation of the pass by inner type strategy. The type that uses this strategy will be
 /// passed between wasm and the host by using the wrapped inner type. So, this strategy is only
 /// usable by newtype structs.
-///
+/// 内部类型传递策略的实现。使用此策略的类型将通过使用包装的内部类型在 wasm 和主机之间传递。因此，此策略仅适用于 newtype 结构。
 /// Use this type as associated type for [`PassBy`] to implement this strategy for a type. Besides
 /// that the `PassByInner` trait need to be implemented as well.
-///
+/// 使用此类型作为 [`PassBy`] 的关联类型来为类型实现此策略。除此之外，还需要实现“PassByInner”特性。
 /// This type expects the type that wants to use this strategy as generic parameter `T` and the
 /// inner type as generic parameter `I`.
-///
+/// 此类型期望使用此策略的类型作为泛型参数“T”，内部类型作为泛型参数“I”。
 /// [`PassByInner`](derive.PassByInner.html) is a derive macro to implement this strategy.
-///
+/// [`PassByInner`](derive.PassByInner.html) 是一个派生宏来实现这个策略。
 /// # Example
 /// ```
 /// # use sp_runtime_interface::pass_by::{PassBy, Inner, PassByInner};
@@ -356,14 +363,14 @@ impl<T: PassByInner<Inner = I>, I: RIType> RIType for Inner<T, I> {
 
 /// The implementation of the pass by enum strategy. This strategy uses an `u8` internally to pass
 /// the enum between wasm and the host. So, this strategy only supports enums with unit variants.
-///
+/// pass by enum 策略的实现。此策略在内部使用 `u8` 在 wasm 和主机之间传递枚举。因此，此策略仅支持具有单元变体的枚举。
 /// Use this type as associated type for [`PassBy`] to implement this strategy for a type.
-///
+/// 使用此类型作为 [`PassBy`] 的关联类型来为类型实现此策略。
 /// This type expects the type that wants to implement this strategy as generic parameter. Besides
 /// that the type needs to implement `TryFrom<u8>` and `From<Self> for u8`.
-///
+/// 此类型需要想要实现此策略的类型作为泛型参数。除此之外，该类型还需要实现 `TryFrom<u8>` 和 `From<Self> for u8`。
 /// [`PassByEnum`](derive.PassByEnum.html) is a derive macro to implement this strategy.
-///
+/// [`PassByEnum`](derive.PassByEnum.html) 是一个派生宏来实现这个策略。
 /// # Example
 /// ```
 /// # use sp_runtime_interface::pass_by::{PassBy, Enum};
