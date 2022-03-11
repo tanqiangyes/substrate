@@ -16,6 +16,7 @@
 // limitations under the License
 
 //! Houses the code that implements the transactional overlay storage.
+//! 包含实现事务覆盖存储的代码。
 
 use super::{Extrinsics, StorageKey, StorageValue};
 
