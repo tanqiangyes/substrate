@@ -19,19 +19,22 @@ use crate::{Error, InherentData, InherentIdentifier};
 use sp_runtime::traits::Block as BlockT;
 
 /// Something that can create inherent data providers.
-///
+/// 可以创建固有数据提供者的东西。
 /// It is possible for the caller to provide custom arguments to the callee by setting the
 /// `ExtraArgs` generic parameter.
-///
+/// 调用者可以通过设置“ExtraArgs”通用参数向被调用者提供自定义参数。
 /// The crate already provides some convience implementations of this trait for
 /// `Box<dyn CreateInherentDataProviders>` and closures. So, it should not be required to implement
 /// this trait manually.
+/// crate 已经为 `Box<dyn CreateInherentDataProviders>` 和闭包提供了这个 trait 的一些便利实现。因此，不应要求手动实现此特征。
 #[async_trait::async_trait]
 pub trait CreateInherentDataProviders<Block: BlockT, ExtraArgs>: Send + Sync {
 	/// The inherent data providers that will be created.
+	/// 将创建的固有数据提供者。
 	type InherentDataProviders: InherentDataProvider;
 
 	/// Create the inherent data providers at the given `parent` block using the given `extra_args`.
+	/// 使用给定的 `extra_args` 在给定的 `parent` 块中创建固有的数据提供者。
 	async fn create_inherent_data_providers(
 		&self,
 		parent: Block::Hash,
@@ -78,11 +81,13 @@ impl<Block: BlockT, ExtraArgs: Send, IDPS: InherentDataProvider>
 }
 
 /// Something that provides inherent data.
+/// 提供固有数据的东西。
 #[async_trait::async_trait]
 pub trait InherentDataProvider: Send + Sync {
 	/// Convenience function for creating [`InherentData`].
-	///
+	/// 用于创建 [`InherentData`] 的便捷函数。
 	/// Basically maps around [`Self::provide_inherent_data`].
+	/// 基本上围绕 [`Self::provide_inherent_data`] 进行映射。
 	fn create_inherent_data(&self) -> Result<InherentData, Error> {
 		let mut inherent_data = InherentData::new();
 		self.provide_inherent_data(&mut inherent_data)?;
@@ -90,13 +95,15 @@ pub trait InherentDataProvider: Send + Sync {
 	}
 
 	/// Provide inherent data that should be included in a block.
-	///
+	/// 提供应包含在块中的固有数据
 	/// The data should be stored in the given `InherentData` structure.
+	/// 数据应存储在给定的“InherentData”结构中。
 	fn provide_inherent_data(&self, inherent_data: &mut InherentData) -> Result<(), Error>;
 
 	/// Convert the given encoded error to a string.
-	///
+	/// 将给定的编码错误转换为字符串。
 	/// If the given error could not be decoded, `None` should be returned.
+	/// 如果无法解码给定的错误，则应返回“None”。
 	async fn try_handle_error(
 		&self,
 		identifier: &InherentIdentifier,

@@ -16,34 +16,39 @@
 // limitations under the License.
 
 //! Substrate inherent extrinsics
-//!
+//! 固有交易
 //! Inherent extrinsics are extrinsics that are inherently added to each block. However, it is up to
 //! runtime implementation to require an inherent for each block or to make it optional. Inherents
 //! are mainly used to pass data from the block producer to the runtime. So, inherents require some
 //! part that is running on the client side and some part that is running on the runtime side. Any
 //! data that is required by an inherent is passed as [`InherentData`] from the client to the
 //! runtime when the inherents are constructed.
-//!
+//! 固有的交易是指固有地添加到每个块中的交易。然而，这取决于运行时的实现，是否要求每个块都有一个固有的，或者使其成为可选的。
+//! Inherents主要用于将数据从块生产者传递给运行时。因此，Inherents需要一些在客户端运行的部分和一些在运行时运行的部分。
+//! 构建Inherents时，Inherents所需的任何数据都会作为[`InherentData`]从客户端传递给运行时。
 //! The process of constructing and applying inherents is the following:
-//!
+//! 构造和应用inherents的过程如下：
 //! 1. The block producer first creates the [`InherentData`] by using the inherent data providers
 //! that are created by [`CreateInherentDataProviders`].
-//!
+//! 1. 区块生产者首先通过使用由[`CreateInherentDataProviders`]创建的固有数据提供者来创建[`InherentData`]。
 //! 2. The [`InherentData`] is passed to the `inherent_extrinsics` function of the `BlockBuilder`
 //! runtime api. This will call the runtime which will create all the inherents that should be
 //! applied to the block.
-//!
+//! 2. [`InherentData`]被传递给`BlockBuilder`运行时api的`inherent_extrinsics`函数。
+//! 这将调用运行时，运行时将创建所有应该应用于区块的内在因素。
 //! 3. Apply each inherent to the block like any normal extrinsic.
-//!
+//! 3. 像其他正常的外在因素一样，将每个内在因素应用到块中。
 //! On block import the inherents in the block are checked by calling the `check_inherents` runtime
 //! API. This will also pass an instance of [`InherentData`] which the runtime can use to validate
 //! all inherents. If some inherent data isn't required for validating an inherent, it can be
 //! omitted when providing the inherent data providers for block import.
-//!
+//! 在区块导入时，通过调用`check_inherents`运行时API来检查区块中的inherents。
+//! 这也将传递一个[`InherentData`]的实例，运行时可以用它来验证所有的inherents。
+//! 如果某些固有数据在验证inherent时不需要，那么在提供块导入的固有数据提供者时可以省略。
 //! # Providing inherent data
 //!
 //! To provide inherent data from the client side, [`InherentDataProvider`] should be implemented.
-//!
+//! 为了从客户端提供固有数据，应该实现 [`InherentDataProvider`]。
 //! ```
 //! use codec::Decode;
 //! use sp_inherents::{InherentIdentifier, InherentData};
@@ -96,7 +101,7 @@
 //! In the service the relevant inherent data providers need to be passed the block production and
 //! the block import. As already highlighted above, the providers can be different between import
 //! and production.
-//!
+//! 在服务中，相关的固有数据提供者需要通过区块生产和区块导入。正如上面已经强调的，导入和生产之间的提供者可以是不同的。
 //! ```
 //! # use sp_runtime::testing::ExtrinsicWrapper;
 //! # use sp_inherents::{InherentIdentifier, InherentData};
@@ -158,6 +163,8 @@
 //! to create the inherents. As already described above the client side passes the [`InherentData`]
 //! and expects the runtime to construct the inherents out of it. When validating the inherents,
 //! [`CheckInherentsResult`] is used to communicate the result client side.
+//! 由于固有数据是由运行时创建的，如何创建固有数据取决于运行时的实现。
+//! 如上所述，客户端传递[`InherentData`]，并期望运行时从其中构造出inherents。当验证inherents时，[`CheckInherentsResult`]被用来与客户端交流结果。
 
 #![cfg_attr(not(feature = "std"), no_std)]
 #![warn(missing_docs)]
@@ -176,6 +183,7 @@ mod client_side;
 pub use client_side::*;
 
 /// Errors that occur in context of inherents.
+/// 在固有的上下文中发生的错误
 #[derive(Debug)]
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 #[allow(missing_docs)]
@@ -201,12 +209,15 @@ pub enum Error {
 }
 
 /// An identifier for an inherent.
+/// 固有的标识符
 pub type InherentIdentifier = [u8; 8];
 
 /// Inherent data to include in a block.
+/// 要包含在块中的固有数据。
 #[derive(Clone, Default, Encode, Decode)]
 pub struct InherentData {
 	/// All inherent data encoded with parity-scale-codec and an identifier.
+	/// 所有的固有数据都用奇偶校验码和一个标识符进行编码。
 	data: BTreeMap<InherentIdentifier, Vec<u8>>,
 }
 
@@ -217,7 +228,7 @@ impl InherentData {
 	}
 
 	/// Put data for an inherent into the internal storage.
-	///
+	/// 将固有的数据放入内部存储。
 	/// # Return
 	///
 	/// Returns `Ok(())` if the data could be inserted and no data for an inherent with the same
@@ -239,19 +250,19 @@ impl InherentData {
 	}
 
 	/// Replace the data for an inherent.
-	///
+	/// 替换固有交易的数据
 	/// If it does not exist, the data is just inserted.
 	pub fn replace_data<I: codec::Encode>(&mut self, identifier: InherentIdentifier, inherent: &I) {
 		self.data.insert(identifier, inherent.encode());
 	}
 
 	/// Returns the data for the requested inherent.
-	///
+	/// 返回请求得固有交易的数据
 	/// # Return
 	///
-	/// - `Ok(Some(I))` if the data could be found and deserialized.
-	/// - `Ok(None)` if the data could not be found.
-	/// - `Err(_)` if the data could be found, but deserialization did not work.
+	/// - `Ok(Some(I))` if the data could be found and deserialized. （找到并解码）
+	/// - `Ok(None)` if the data could not be found. （没有）
+	/// - `Err(_)` if the data could be found, but deserialization did not work. （数据能找到但是解码失败）
 	pub fn get_data<I: codec::Decode>(
 		&self,
 		identifier: &InherentIdentifier,
@@ -265,24 +276,29 @@ impl InherentData {
 	}
 
 	/// Get the number of inherents in this instance
+	/// 获取此实例中的固有数
 	pub fn len(&self) -> usize {
 		self.data.len()
 	}
 }
 
 /// The result of checking inherents.
-///
+/// 检查固有交易的结果
 /// It either returns okay for all checks, stores all occurred errors or just one fatal error.
 ///
 /// When a fatal error occurs, all other errors are removed and the implementation needs to
-/// abort checking inherents.
+/// abort checking inherents..
+/// 致命错误，则移除其他错误并需要中断检查固有交易
 #[derive(Encode, Decode, Clone)]
 pub struct CheckInherentsResult {
 	/// Did the check succeed?
+	/// 检查成功？
 	okay: bool,
 	/// Did we encounter a fatal error?
+	/// 我们遇到致命错误了吗？
 	fatal_error: bool,
 	/// We use the `InherentData` to store our errors.
+	/// 我们使用 `InherentData` 来存储我们的错误。
 	errors: InherentData,
 }
 
@@ -299,12 +315,12 @@ impl CheckInherentsResult {
 	}
 
 	/// Put an error into the result.
-	///
+	/// 放置一个错误到结果
 	/// This makes this result resolve to `ok() == false`.
 	///
 	/// # Parameters
 	///
-	/// - identifier - The identifier of the inherent that generated the error.
+	/// - identifier - The identifier of the inherent that generated the error.（错误标识符）
 	/// - error - The error that will be encoded.
 	pub fn put_error<E: codec::Encode + IsFatalError>(
 		&mut self,
@@ -329,7 +345,7 @@ impl CheckInherentsResult {
 	}
 
 	/// Get an error out of the result.
-	///
+	/// 从结果中获取错误
 	/// # Return
 	///
 	/// - `Ok(Some(I))` if the error could be found and deserialized.
@@ -368,19 +384,23 @@ impl PartialEq for CheckInherentsResult {
 }
 
 /// Did we encounter a fatal error while checking an inherent?
-///
+/// 我们在检查固有函数时是否遇到了致命错误？
 /// A fatal error is everything that fails while checking an inherent error, e.g. the inherent
 /// was not found, could not be decoded etc.
 /// Then there are cases where you not want the inherent check to fail, but report that there is an
 /// action required. For example a timestamp of a block is in the future, the timestamp is still
 /// correct, but it is required to verify the block at a later time again and then the inherent
 /// check will succeed.
+/// 致命错误是在检查固有错误时失败的所有内容，例如未找到固有的，无法解码等。
+/// 然后在某些情况下，您不希望固有检查失败，但报告需要采取措施。
+/// 比如一个区块的时间戳是在未来，时间戳仍然是正确的，但是需要在稍后的时间再次验证该区块，然后固有交易检查才会成功。
 pub trait IsFatalError {
 	/// Is this a fatal error?
 	fn is_fatal_error(&self) -> bool;
 }
 
 /// Auxiliary to make any given error resolve to `is_fatal_error() == true` for [`IsFatalError`].
+/// 辅助使任何给定的错误解析为 [`IsFatalError`] 的 `is_fatal_error() == true`。
 #[derive(codec::Encode)]
 pub struct MakeFatalError<E>(E);
 

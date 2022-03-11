@@ -33,21 +33,23 @@ use sp_std::{
 
 /// Marker trait for types that should be registered as [`Externalities`](crate::Externalities)
 /// extension.
-///
+/// 应该注册为 [`Externalities`](crate::Externalities) 扩展的类型的标记特征。
 /// As extensions are stored as `Box<Any>`, this trait should give more confidence that the correct
 /// type is registered and requested.
+/// 由于扩展存储为 `Box<Any>`，因此该 trait 应该更加确信注册和请求了正确的类型。
 pub trait Extension: Send + Any {
 	/// Return the extension as `&mut dyn Any`.
-	///
+	/// 将扩展名返回为 `&mut dyn Any`。
 	/// This is a trick to make the trait type castable into an `Any`.
+	/// 这是使 trait 类型可转换为 `Any` 的技巧。
 	fn as_mut_any(&mut self) -> &mut dyn Any;
 }
 
 /// Macro for declaring an extension that usable with [`Extensions`].
-///
+/// 用于声明可与 [`Extensions`] 一起使用的扩展的宏。
 /// The extension will be an unit wrapper struct that implements [`Extension`], `Deref` and
 /// `DerefMut`. The wrapped type is given by the user.
-///
+/// 扩展将是一个单元包装结构，它实现了 [`Extension`]、`Deref` 和 `DerefMut`。包装类型由用户给出。
 /// # Example
 /// ```
 /// # use sp_externalities::decl_extension;
@@ -94,18 +96,20 @@ macro_rules! decl_extension {
 }
 
 /// Something that provides access to the [`Extensions`] store.
-///
+/// 提供访问 [`Extensions`] 存储的东西。
 /// This is a super trait of the [`Externalities`](crate::Externalities).
+/// 这是 [`Externalities`](crate::Externalities) 的一个父特征。
 pub trait ExtensionStore {
 	/// Tries to find a registered extension by the given `type_id` and returns it as a `&mut dyn
 	/// Any`.
-	///
+	/// 尝试通过给定的 `type_id` 查找已注册的扩展并将其作为 `&mut dyn Any` 返回。
 	/// It is advised to use [`ExternalitiesExt::extension`](crate::ExternalitiesExt::extension)
 	/// instead of this function to get type system support and automatic type downcasting.
+	/// 建议使用 [`ExternalitiesExt::extension`](crate::ExternalitiesExt::extension) 代替此函数来获得类型系统支持和自动类型向下转换。
 	fn extension_by_type_id(&mut self, type_id: TypeId) -> Option<&mut dyn Any>;
 
 	/// Register extension `extension` with specified `type_id`.
-	///
+	/// 使用指定的`type_id`注册扩展`extension`。
 	/// It should return error if extension is already registered.
 	fn register_extension_with_type_id(
 		&mut self,
@@ -114,12 +118,13 @@ pub trait ExtensionStore {
 	) -> Result<(), Error>;
 
 	/// Deregister extension with speicifed 'type_id' and drop it.
-	///
+	/// 使用指定的“type_id”取消注册扩展并将其删除。
 	/// It should return error if extension is not registered.
 	fn deregister_extension_by_type_id(&mut self, type_id: TypeId) -> Result<(), Error>;
 }
 
 /// Stores extensions that should be made available through the externalities.
+/// 存储应该通过外部性提供的扩展。
 #[derive(Default)]
 pub struct Extensions {
 	extensions: BTreeMap<TypeId, Box<dyn Extension>>,
@@ -160,6 +165,7 @@ impl Extensions {
 	}
 
 	/// Return a mutable reference to the requested extension.
+	/// 返回对请求的扩展的可变引用。
 	pub fn get_mut(&mut self, ext_type_id: TypeId) -> Option<&mut dyn Any> {
 		self.extensions
 			.get_mut(&ext_type_id)
@@ -168,7 +174,7 @@ impl Extensions {
 	}
 
 	/// Deregister extension for the given `type_id`.
-	///
+	/// 取消注册给定 `type_id` 的扩展名。
 	/// Returns `true` when the extension was registered.
 	pub fn deregister(&mut self, type_id: TypeId) -> bool {
 		self.extensions.remove(&type_id).is_some()

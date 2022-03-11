@@ -18,12 +18,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 //! Substrate externalities abstraction
-//!
+//! externalities抽象
 //! The externalities mainly provide access to storage and to registered extensions. Extensions
 //! are for example the keystore or the offchain externalities. These externalities are used to
 //! access the node from the runtime via the runtime interfaces.
-//!
+//! 外部因素主要是提供存储和注册扩展的机会。例如，扩展是指钥匙库或链外的外部性。这些外部性被用来从运行时通过运行时接口访问节点。
 //! This crate exposes the main [`Externalities`] trait.
+//! 这个 crate 暴露了主要的 [`Externalities`] 特征
 
 use sp_std::{
 	any::{Any, TypeId},
@@ -40,23 +41,30 @@ mod extensions;
 mod scope_limited;
 
 /// Externalities error.
+/// 错误
 #[derive(Debug)]
 pub enum Error {
 	/// Same extension cannot be registered twice.
+	/// 注册两次
 	ExtensionAlreadyRegistered,
 	/// Extensions are not supported.
+	/// 扩展不支持
 	ExtensionsAreNotSupported,
 	/// Extension `TypeId` is not registered.
+	/// 扩展 `TypeId` 未注册。
 	ExtensionIsNotRegistered(TypeId),
 	/// Failed to update storage,
+	/// 更新存储失败
 	StorageUpdateFailed(&'static str),
 }
 
 /// The Substrate externalities.
 ///
 /// Provides access to the storage and to other registered extensions.
+/// 提供对存储和其他注册扩展的访问。
 pub trait Externalities: ExtensionStore {
 	/// Write a key value pair to the offchain storage database.
+	/// 将键值对写入链下存储数据库。
 	fn set_offchain_storage(&mut self, key: &[u8], value: Option<&[u8]>);
 
 	/// Read runtime storage.
@@ -68,7 +76,7 @@ pub trait Externalities: ExtensionStore {
 	fn storage_hash(&self, key: &[u8]) -> Option<Vec<u8>>;
 
 	/// Get child storage value hash.
-	///
+	/// 获取子存储值hash
 	/// This may be optimized for large values.
 	///
 	/// Returns an `Option` that holds the SCALE encoded hash.
@@ -90,12 +98,14 @@ pub trait Externalities: ExtensionStore {
 	}
 
 	/// Clear a storage entry (`key`) of current contract being called (effective immediately).
+	/// 清除当前调用合约的存储条目（`key`）（立即生效）。
 	fn clear_storage(&mut self, key: &[u8]) {
 		self.place_storage(key.to_vec(), None);
 	}
 
 	/// Clear a child storage entry (`key`) of current contract being called (effective
 	/// immediately).
+	/// 清除正在调用的当前合约的子存储条目（`key`）（立即生效）。
 	fn clear_child_storage(&mut self, child_info: &ChildInfo, key: &[u8]) {
 		self.place_child_storage(child_info, key.to_vec(), None)
 	}
@@ -111,19 +121,21 @@ pub trait Externalities: ExtensionStore {
 	}
 
 	/// Returns the key immediately following the given key, if it exists.
+	/// 返回紧跟给定键的键（如果存在）。
 	fn next_storage_key(&self, key: &[u8]) -> Option<Vec<u8>>;
 
 	/// Returns the key immediately following the given key, if it exists, in child storage.
 	fn next_child_storage_key(&self, child_info: &ChildInfo, key: &[u8]) -> Option<Vec<u8>>;
 
 	/// Clear an entire child storage.
-	///
+	/// 清除整个子存储。
 	/// Deletes all keys from the overlay and up to `limit` keys from the backend. No
 	/// limit is applied if `limit` is `None`. Returned boolean is `true` if the child trie was
 	/// removed completely and `false` if there are remaining keys after the function
 	/// returns. Returned `u32` is the number of keys that was removed at the end of the
 	/// operation.
-	///
+	/// 从覆盖层中删除所有键，并从后端删除最多 `limit` 键。如果 `limit` 为 `None`，则不应用限制。
+	/// 如果子 trie 被完全删除，则返回的布尔值为“true”，如果函数返回后还有剩余的键，则返回的布尔值为“false”。返回的 `u32` 是在操作结束时删除的键的数量。
 	/// # Note
 	///
 	/// An implementation is free to delete more keys than the specified limit as long as
@@ -131,8 +143,9 @@ pub trait Externalities: ExtensionStore {
 	fn kill_child_storage(&mut self, child_info: &ChildInfo, limit: Option<u32>) -> (bool, u32);
 
 	/// Clear storage entries which keys are start with the given prefix.
-	///
+	/// 清除以给定前缀开头的键的存储条目。
 	/// `limit` and result works as for `kill_child_storage`.
+	/// `limit` 和 result 适用于 `kill_child_storage`。
 	fn clear_prefix(&mut self, prefix: &[u8], limit: Option<u32>) -> (bool, u32);
 
 	/// Clear child storage entries which keys are start with the given prefix.
@@ -178,7 +191,7 @@ pub trait Externalities: ExtensionStore {
 	fn storage_append(&mut self, key: Vec<u8>, value: Vec<u8>);
 
 	/// Start a new nested transaction.
-	///
+	/// 开始交易
 	/// This allows to either commit or roll back all changes made after this call to the
 	/// top changes or the default child changes. For every transaction there cam be a
 	/// matching call to either `storage_rollback_transaction` or `storage_commit_transaction`.
@@ -189,13 +202,13 @@ pub trait Externalities: ExtensionStore {
 	fn storage_start_transaction(&mut self);
 
 	/// Rollback the last transaction started by `storage_start_transaction`.
-	///
+	/// 回滚
 	/// Any changes made during that storage transaction are discarded. Returns an error when
 	/// no transaction is open that can be closed.
 	fn storage_rollback_transaction(&mut self) -> Result<(), ()>;
 
 	/// Commit the last transaction started by `storage_start_transaction`.
-	///
+	/// 提交
 	/// Any changes made during that storage transaction are committed. Returns an error when
 	/// no transaction is open that can be closed.
 	fn storage_commit_transaction(&mut self) -> Result<(), ()>;
@@ -273,19 +286,23 @@ pub trait Externalities: ExtensionStore {
 }
 
 /// Extension for the [`Externalities`] trait.
+/// [`Externalities`] 特征的扩展。
 pub trait ExternalitiesExt {
 	/// Tries to find a registered extension and returns a mutable reference.
+	/// 尝试查找已注册的扩展并返回可变引用。
 	fn extension<T: Any + Extension>(&mut self) -> Option<&mut T>;
 
 	/// Register extension `ext`.
-	///
+	/// 注册扩展 `ext`。
 	/// Should return error if extension is already registered or extensions are not supported.
+	/// 已注册或着不支持应该返回错误
 	fn register_extension<T: Extension>(&mut self, ext: T) -> Result<(), Error>;
 
 	/// Deregister and drop extension of `T` type.
-	///
+	/// 取消注册并删除 `T` 类型的扩展名。
 	/// Should return error if extension of type `T` is not registered or
 	/// extensions are not supported.
+	/// 如果 `T` 类型的扩展未注册或不支持扩展，则应返回错误。
 	fn deregister_extension<T: Extension>(&mut self) -> Result<(), Error>;
 }
 
