@@ -34,9 +34,11 @@ pub mod storage;
 pub mod testing;
 
 /// Persistent storage prefix used by the Offchain Worker API when creating a DB key.
+/// 创建数据库密钥时，Offchain Worker API 使用的持久存储前缀。
 pub const STORAGE_PREFIX: &[u8] = b"storage";
 
 /// Offchain DB persistent (non-fork-aware) storage.
+/// 链下数据库持久（非分叉感知）存储。
 pub trait OffchainStorage: Clone + Send + Sync {
 	/// Persist a value in storage under given key and prefix.
 	fn set(&mut self, prefix: &[u8], key: &[u8], value: &[u8]);
@@ -48,7 +50,7 @@ pub trait OffchainStorage: Clone + Send + Sync {
 	fn get(&self, prefix: &[u8], key: &[u8]) -> Option<Vec<u8>>;
 
 	/// Replace the value in storage if given old_value matches the current one.
-	///
+	/// 如果给定的 old_value 与当前值匹配，则替换存储中的值。
 	/// Returns `true` if the value has been set and false otherwise.
 	fn compare_and_set(
 		&mut self,
@@ -60,6 +62,7 @@ pub trait OffchainStorage: Clone + Send + Sync {
 }
 
 /// A type of supported crypto.
+/// 一种受支持的加密货币。
 #[derive(Clone, Copy, PartialEq, Eq, Encode, Decode, RuntimeDebug, PassByEnum)]
 #[cfg_attr(feature = "std", derive(serde::Serialize, serde::Deserialize))]
 #[repr(C)]
@@ -70,11 +73,17 @@ pub enum StorageKind {
 	/// that is re-run at block `N(hash2)`.
 	/// This storage can be used by offchain workers to handle forks
 	/// and coordinate offchain workers running on different forks.
+	/// 持久存储是不可恢复的并且不支持分叉。
+	/// 这意味着在块“N(hash1)”触发的链下工作人员设置的任何值都会保留，即使该块被恢复为非规范
+	/// 并且可用于在块“N(hash2)”重新运行的工作人员.
+	/// 链下工作人员可以使用此存储来处理分叉并协调在不同分叉上运行的链下工作人员。
 	PERSISTENT = 1_isize,
 	/// Local storage is revertible and fork-aware. It means that any value
 	/// set by the offchain worker triggered at block `N(hash1)` is reverted
 	/// if that block is reverted as non-canonical and is NOT available for the worker
 	/// that is re-run at block `N(hash2)`.
+	/// 本地存储是可恢复的和分叉感知的。这意味着如果该块被恢复为非规范并且不可用于在块“N(hash2)”
+	/// 重新运行的工作人员，则在块“N(hash1)”触发的链外工作人员设置的任何值都将被恢复.
 	LOCAL = 2_isize,
 }
 
@@ -97,6 +106,7 @@ impl From<StorageKind> for u32 {
 }
 
 /// Opaque type for offchain http requests.
+/// 链下 http 请求的不透明类型。
 #[derive(
 	Clone, Copy, PartialEq, Eq, PartialOrd, Ord, RuntimeDebug, Encode, Decode, PassByInner,
 )]
@@ -187,16 +197,20 @@ impl TryFrom<u32> for HttpRequestStatus {
 
 /// A blob to hold information about the local node's network state
 /// without committing to its format.
+/// 一个 blob，用于保存有关本地节点网络状态的信息，而无需提交其格式。
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, PassByCodec, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Default))]
 pub struct OpaqueNetworkState {
 	/// PeerId of the local node in SCALE encoded.
+	/// SCALE 编码的本地节点的 PeerId。
 	pub peer_id: OpaquePeerId,
 	/// List of addresses the node knows it can be reached as.
+	/// 节点知道它可以到达的地址列表。
 	pub external_addresses: Vec<OpaqueMultiaddr>,
 }
 
 /// Simple blob to hold a `Multiaddr` without committing to its format.
+/// 简单的 blob 保存一个 `Multiaddr` 而不提交其格式。
 #[derive(Clone, Eq, PartialEq, Encode, Decode, RuntimeDebug, PassByInner, TypeInfo)]
 pub struct OpaqueMultiaddr(pub Vec<u8>);
 

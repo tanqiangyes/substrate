@@ -680,14 +680,18 @@ pub type Key = Vec<u8>;
 pub type KeyValue = (Vec<u8>, Vec<u8>);
 
 /// A phase of a block's execution.
+/// 块执行的一个阶段。
 #[derive(Encode, Decode, RuntimeDebug, TypeInfo)]
 #[cfg_attr(feature = "std", derive(Serialize, PartialEq, Eq, Clone))]
 pub enum Phase {
 	/// Applying an extrinsic.
+	/// 应用交易
 	ApplyExtrinsic(u32),
 	/// Finalizing the block.
+	/// 最终化区块
 	Finalization,
 	/// Initializing the block.
+	/// 初始化区块
 	Initialization,
 }
 
@@ -1236,7 +1240,7 @@ impl<T: Config> Pallet<T> {
 
 	/// Inform the system pallet of some additional weight that should be accounted for, in the
 	/// current block.
-	///
+	/// 通知系统托盘在当前块中应该考虑的一些额外重量。
 	/// NOTE: use with extra care; this function is made public only be used for certain pallets
 	/// that need it. A runtime that does not have dynamic calls should never need this and should
 	/// stick to static weights. A typical use case for this is inner calls or smart contract calls.
@@ -1256,6 +1260,7 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Start the execution of a particular block.
+	/// 开始执行特定块
 	pub fn initialize(number: &T::BlockNumber, parent_hash: &T::Hash, digest: &generic::Digest) {
 		// populate environment
 		ExecutionPhase::<T>::put(Phase::Initialization);
@@ -1271,6 +1276,7 @@ impl<T: Config> Pallet<T> {
 
 	/// Remove temporary "environment" entries in storage, compute the storage root and return the
 	/// resulting header for this block.
+	/// 删除存储中的临时“环境”条目，计算存储根并返回此块的结果标头。
 	pub fn finalize() -> T::Header {
 		log::debug!(
 			target: "runtime::system",
@@ -1458,14 +1464,16 @@ impl<T: Config> Pallet<T> {
 	}
 
 	/// Note what the extrinsic data of the current extrinsic index is.
-	///
+	/// 注意当前外部索引的外部数据是什么。
 	/// This is required to be called before applying an extrinsic. The data will used
 	/// in [`Self::finalize`] to calculate the correct extrinsics root.
+	/// 这需要在应用外部函数之前调用。数据将在 [`Self::finalize`] 中用于计算正确的外部根。
 	pub fn note_extrinsic(encoded_xt: Vec<u8>) {
 		ExtrinsicData::<T>::insert(Self::extrinsic_index().unwrap_or_default(), encoded_xt);
 	}
 
 	/// To be called immediately after an extrinsic has been applied.
+	/// 在应用外在之后立即调用。
 	pub fn note_applied_extrinsic(r: &DispatchResultWithPostInfo, mut info: DispatchInfo) {
 		info.weight = extract_actual_weight(r, &info);
 		Self::deposit_event(match r {
@@ -1489,6 +1497,7 @@ impl<T: Config> Pallet<T> {
 
 	/// To be called immediately after `note_applied_extrinsic` of the last extrinsic of the block
 	/// has been called.
+	/// 在调用块的最后一个外部的 `note_applied_extrinsic` 之后立即调用。
 	pub fn note_finished_extrinsics() {
 		let extrinsic_index: u32 =
 			storage::unhashed::take(well_known_keys::EXTRINSIC_INDEX).unwrap_or_default();
@@ -1498,6 +1507,7 @@ impl<T: Config> Pallet<T> {
 
 	/// To be called immediately after finishing the initialization of the block
 	/// (e.g., called `on_initialize` for all pallets).
+	/// 在完成块的初始化后立即调用（例如，对所有托盘调用 `on_initialize`）。
 	pub fn note_finished_initialize() {
 		ExecutionPhase::<T>::put(Phase::ApplyExtrinsic(0))
 	}

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! State machine backends. These manage the code and storage of contracts.
+//! 状态机后端。这些管理合约的代码和存储。
 
 use crate::{
 	trie_backend::TrieBackend, trie_backend_essence::TrieBackendStorage, ChildStorageCollection,
@@ -30,16 +31,19 @@ use sp_std::vec::Vec;
 
 /// A state backend is used to read state data and can have changes committed
 /// to it.
-///
+/// 状态后端用于读取状态数据并可以对其进行更改。
 /// The clone operation (if implemented) should be cheap.
+/// 克隆操作（如果实施）应该很便宜。
 pub trait Backend<H: Hasher>: sp_std::fmt::Debug {
 	/// An error type when fetching data is not possible.
 	type Error: super::Error;
 
 	/// Storage changes to be applied if committing
+	/// 提交时要应用的存储更改
 	type Transaction: Consolidate + Default + Send;
 
 	/// Type of trie backend storage.
+	/// trie 后端存储的类型。
 	type TrieBackendStorage: TrieBackendStorage<H, Overlay = Self::Transaction>;
 
 	/// Get keyed storage or None if there is nothing associated.
@@ -273,8 +277,10 @@ pub trait Backend<H: Hasher>: sp_std::fmt::Debug {
 }
 
 /// Trait that allows consolidate two transactions together.
+/// 允许将两个事务合并在一起的特征
 pub trait Consolidate {
 	/// Consolidate two transactions into one.
+	/// 将两个事务合并为一个。
 	fn consolidate(&mut self, other: Self);
 }
 
@@ -301,6 +307,7 @@ where
 }
 
 /// Wrapper to create a [`RuntimeCode`] from a type that implements [`Backend`].
+/// 用于从实现 [`Backend`] 的类型创建 [`RuntimeCode`] 的包装器。
 #[cfg(feature = "std")]
 pub struct BackendRuntimeCode<'a, B, H> {
 	backend: &'a B,

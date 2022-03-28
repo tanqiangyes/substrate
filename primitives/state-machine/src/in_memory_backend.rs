@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! State machine in memory backend.
+//! 内存后端中的状态机。
 
 use crate::{
 	backend::Backend, trie_backend::TrieBackend, StorageCollection, StorageKey, StorageValue,
@@ -27,6 +28,7 @@ use sp_trie::{empty_trie_root, LayoutV1, MemoryDB};
 use std::collections::{BTreeMap, HashMap};
 
 /// Create a new empty instance of in-memory backend.
+/// 创建一个新的内存后端空实例。
 pub fn new_in_mem<H: Hasher>() -> TrieBackend<MemoryDB<H>, H>
 where
 	H::Out: Codec + Ord,

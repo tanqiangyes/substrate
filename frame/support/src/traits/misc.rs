@@ -649,7 +649,7 @@ impl<Origin: PartialEq> PrivilegeCmp<Origin> for EqualPrivilegeOnly {
 #[impl_trait_for_tuples::impl_for_tuples(30)]
 pub trait OffchainWorker<BlockNumber> {
 	/// This function is being called after every block import (when fully synced).
-	///
+	/// 每次导入块后（完全同步时）都会调用此函数。
 	/// Implement this and use any of the `Offchain` `sp_io` set of APIs
 	/// to perform off-chain computations, calls and submit transactions
 	/// with results to trigger any on-chain changes.
@@ -678,7 +678,7 @@ pub trait GetBacking {
 /// This is typically implemented on runtime, through `construct_runtime!`.
 pub trait EnsureInherentsAreFirst<Block> {
 	/// Ensure the position of inherent is correct, i.e. they are before non-inherents.
-	///
+	/// 确保固有的位置是正确的，即它们在非固有之前。
 	/// On error return the index of the inherent with invalid position (counting from 0).
 	fn ensure_inherents_are_first(block: &Block) -> Result<(), u32>;
 }

@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Basic implementation for Externalities.
+//! 外部性的基本实现。
 
 use crate::{Backend, StorageKey, StorageValue};
 use codec::Encode;

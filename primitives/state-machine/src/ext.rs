@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Concrete externalities implementation.
+//! 具体的外部性实施
 
 #[cfg(feature = "std")]
 use crate::overlayed_changes::OverlayedExtensions;
@@ -58,13 +59,16 @@ fn guard() -> () {
 }
 
 /// Errors that can occur when interacting with the externalities.
+/// 与外部因素交互时可能发生的错误。
 #[cfg(feature = "std")]
 #[derive(Debug, Copy, Clone)]
 pub enum Error<B, E> {
 	/// Failure to load state data from the backend.
+	/// 从backend载入状态数据失败
 	#[allow(unused)]
 	Backend(B),
 	/// Failure to execute a function.
+	/// 执行函数失败
 	#[allow(unused)]
 	Executor(E),
 }
@@ -90,20 +94,25 @@ impl<B: error::Error, E: error::Error> error::Error for Error<B, E> {
 }
 
 /// Wraps a read-only backend, call executor, and current overlayed changes.
+/// 包装只读后端、调用执行器和当前覆盖的更改。
 pub struct Ext<'a, H, B>
 where
 	H: Hasher,
 	B: 'a + Backend<H>,
 {
 	/// The overlayed changes to write to.
+	/// 覆盖修改
 	overlay: &'a mut OverlayedChanges,
 	/// The storage backend to read from.
+	/// 读取的存储后段来源
 	backend: &'a B,
 	/// The cache for the storage transactions.
+	/// 存储事务的缓存。
 	storage_transaction_cache: &'a mut StorageTransactionCache<B::Transaction, H>,
 	/// Pseudo-unique id used for tracing.
 	pub id: u16,
 	/// Extensions registered with this instance.
+	/// 使用此实例注册的扩展。
 	#[cfg(feature = "std")]
 	extensions: Option<OverlayedExtensions<'a>>,
 }
@@ -141,7 +150,7 @@ where
 	}
 
 	/// Invalidates the currently cached storage root and the db transaction.
-	///
+	/// 使当前缓存的存储根和数据库事务无效。
 	/// Called when there are changes that likely will invalidate the storage root.
 	fn mark_dirty(&mut self) {
 		self.storage_transaction_cache.reset();

@@ -17,6 +17,7 @@
 
 //! Trie-based state machine backend essence used to read values
 //! from storage.
+//! 基于 Trie 的状态机后端本质，用于从存储中读取值。
 
 use crate::{backend::Consolidate, debug, warn, StorageKey, StorageValue};
 use codec::Encode;

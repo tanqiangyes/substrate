@@ -156,8 +156,9 @@ pub enum IndexOperation {
 /// 这包含对存储和事务的所有更改，以将这些更改应用到后端。
 pub struct StorageChanges<Transaction, H: Hasher> {
 	/// All changes to the main storage.
-	///
+	/// 对主存储的所有更改。
 	/// A value of `None` means that it was deleted.
+	/// `None` 的值意味着它已被删除。
 	pub main_storage_changes: StorageCollection,
 	/// All changes to the child storages.
 	pub child_storage_changes: ChildStorageCollection,
@@ -202,10 +203,14 @@ impl<Transaction, H: Hasher> StorageChanges<Transaction, H> {
 /// Storage transactions are calculated as part of the `storage_root`.
 /// These transactions can be reused for importing the block into the
 /// storage. So, we cache them to not require a recomputation of those transactions.
+/// 存储事务作为 `storage_root` 的一部分计算。这些交易可以重复用于将块导入存储。
+/// 因此，我们缓存它们以不需要重新计算这些事务。
 pub struct StorageTransactionCache<Transaction, H: Hasher> {
 	/// Contains the changes for the main and the child storages as one transaction.
+	/// 包含主存储和子存储的更改作为一个事务。
 	pub(crate) transaction: Option<Transaction>,
 	/// The storage root after applying the transaction.
+	/// 应用事务后的存储根。
 	pub(crate) transaction_storage_root: Option<H::Out>,
 }
 
@@ -250,6 +255,8 @@ impl OverlayedChanges {
 	/// Returns a double-Option: None if the key is unknown (i.e. and the query should be referred
 	/// to the backend); Some(None) if the key has been deleted. Some(Some(...)) for a key whose
 	/// value has been set.
+	/// 返回一个双层option：如果密钥未知（即查询应该引用到后端），则为无；
+	/// Some(None) 如果密钥已被删除。 Some(Some(...)) 用于已设置值的键。
 	pub fn storage(&self, key: &[u8]) -> Option<Option<&[u8]>> {
 		self.top.get(key).map(|x| {
 			let value = x.value();
@@ -262,7 +269,8 @@ impl OverlayedChanges {
 	/// Returns mutable reference to current value.
 	/// If there is no value in the overlay, the given callback is used to initiate the value.
 	/// Warning this function registers a change, so the mutable reference MUST be modified.
-	///
+	/// 返回对当前值的可变引用。如果覆盖中没有值，则使用给定的回调来初始化该值。
+	/// 警告此函数注册更改，因此必须修改可变引用。
 	/// Can be rolled back or committed when called inside a transaction.
 	#[must_use = "A change was registered, so this value MUST be modified."]
 	pub fn value_mut_or_insert_with(
@@ -288,7 +296,7 @@ impl OverlayedChanges {
 	}
 
 	/// Set a new value for the specified key.
-	///
+	/// 为指定的键设置一个新值。
 	/// Can be rolled back or committed when called inside a transaction.
 	pub fn set_storage(&mut self, key: StorageKey, val: Option<StorageValue>) {
 		let size_write = val.as_ref().map(|x| x.len() as u64).unwrap_or(0);
@@ -535,6 +543,7 @@ impl OverlayedChanges {
 	}
 
 	/// Drain all changes into a [`StorageChanges`] instance. Leave empty overlay in place.
+	/// 将所有更改排入 [`StorageChanges`] 实例。将空覆盖层留在原处。
 	pub fn drain_storage_changes<B: Backend<H>, H: Hasher>(
 		&mut self,
 		backend: &B,
@@ -688,6 +697,7 @@ where
 
 /// An overlayed extension is either a mutable reference
 /// or an owned extension.
+/// 覆盖的扩展是可变引用或拥有的扩展
 #[cfg(feature = "std")]
 pub enum OverlayedExtension<'a> {
 	MutRef(&'a mut Box<dyn Extension>),
@@ -695,12 +705,14 @@ pub enum OverlayedExtension<'a> {
 }
 
 /// Overlayed extensions which are sourced from [`Extensions`].
-///
+/// 来自 [`Extensions`] 的覆盖扩展。
 /// The sourced extensions will be stored as mutable references,
 /// while extensions that are registered while execution are stored
 /// as owned references. After the execution of a runtime function, we
 /// can safely drop this object while not having modified the original
 /// list.
+/// 源扩展将存储为可变引用，而在执行时注册的扩展将存储为拥有的引用。
+/// 在运行时函数执行后，我们可以在不修改原始列表的情况下安全地删除该对象。
 #[cfg(feature = "std")]
 pub struct OverlayedExtensions<'a> {
 	extensions: Map<TypeId, OverlayedExtension<'a>>,

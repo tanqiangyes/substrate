@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Substrate state machine implementation.
+//! substrate状态机的实现
 
 #![warn(missing_docs)]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -353,7 +354,7 @@ mod execution {
 		}
 
 		/// Use given `cache` as storage transaction cache.
-		///
+		/// 使用给定的`cache`作为存储交易的缓存
 		/// The cache will be used to cache storage transactions that can be build while executing a
 		/// function in the runtime. For example, when calculating the storage root a transaction is
 		/// build that will be cached.
@@ -374,16 +375,18 @@ mod execution {
 		}
 
 		/// Execute a call using the given state backend, overlayed changes, and call executor.
-		///
+		///  使用给定的状态后台、叠加变化和调用执行器来执行一个调用。
 		/// On an error, no prospective changes are written to the overlay.
-		///
+		/// 如果出错，就不会有任何预期的变化被写入覆盖层。
 		/// Note: changes to code will be in place if this call is made again. For running partial
 		/// blocks (e.g. a transaction at a time), ensure a different method is used.
-		///
+		/// 注意：如果再次进行这个调用，对代码的改变将到位。对于运行部分区块（例如，一次一个事务），确保使用不同的方法。
 		/// Returns the SCALE encoded result of the executed function.
+		///  返回执行函数的SCALE编码结果。
 		pub fn execute(&mut self, strategy: ExecutionStrategy) -> Result<Vec<u8>, Box<dyn Error>> {
 			// We are not giving a native call and thus we are sure that the result can never be a
 			// native value.
+			// 我们没有给出一个本地调用，因此我们可以肯定，结果永远不可能是一个本地值。
 			self.execute_using_consensus_failure_handler::<_, NeverNativeValue, fn() -> _>(
 				strategy.get_manager(),
 				None,
@@ -515,6 +518,7 @@ mod execution {
 		///
 		/// Returns the result of the executed function either in native representation `R` or
 		/// in SCALE encoded representation.
+		/// 返回执行函数的结果，可以是本地表示法`R`，也可以是SCALE编码的表示法。
 		pub fn execute_using_consensus_failure_handler<Handler, R, NC>(
 			&mut self,
 			manager: ExecutionManager<Handler>,
@@ -552,6 +556,7 @@ mod execution {
 	}
 
 	/// Prove execution using the given state backend, overlayed changes, and call executor.
+	/// 使用给定的状态后台、叠加的变化和调用执行器来证明执行。
 	pub fn prove_execution<B, H, Exec, Spawn>(
 		backend: &mut B,
 		overlay: &mut OverlayedChanges,
@@ -586,11 +591,13 @@ mod execution {
 	/// Produces a state-backend-specific "transaction" which can be used to apply the changes
 	/// to the backing store, such as the disk.
 	/// Execution proof is the set of all 'touched' storage DBValues from the backend.
-	///
+	/// 使用给定的 trie 后台、叠加变化和调用执行器证明执行。 产生一个特定于状态后台的 "事务"，可用于将变化应用于后盾存储，如磁盘。
+	/// 执行证明是来自后端所有 "触及 "存储DBValues的集合。
 	/// On an error, no prospective changes are written to the overlay.
-	///
+	/// 在出错时，没有预期的变化被写到覆盖层中。
 	/// Note: changes to code will be in place if this call is made again. For running partial
 	/// blocks (e.g. a transaction at a time), ensure a different method is used.
+	/// 注意：如果再次进行此调用，对代码的修改将到位。对于运行部分区块（例如，一次一个事务），确保使用不同的方法。
 	pub fn prove_execution_on_trie_backend<S, H, Exec, Spawn>(
 		trie_backend: &TrieBackend<S, H>,
 		overlay: &mut OverlayedChanges,
@@ -707,6 +714,7 @@ mod execution {
 
 	/// State machine only allows a single level
 	/// of child trie.
+	/// 状态机只允许单层的子 trie。
 	pub const MAX_NESTED_TRIE_DEPTH: usize = 2;
 
 	/// Multiple key value state.

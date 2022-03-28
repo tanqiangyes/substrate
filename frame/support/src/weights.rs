@@ -229,7 +229,8 @@ pub enum DispatchClass {
 	/// malicious validator cannot craft a valid but impossibly heavy block. Usually this just
 	/// means ensuring that the extrinsic can only be included once and that it is always very
 	/// light.
-	///
+	/// 强制派遣。这些类型的调度总是被包括在内，无论它们的重量如何，因此对它们进行单独验证以确保恶
+	/// 意验证者无法制作有效但不可能很重的块至关重要。通常这只是意味着确保外部只能包含一次并且它总是很轻。
 	/// Do *NOT* use it for extrinsics that can be heavy.
 	///
 	/// The only real use case for this is inherent extrinsics that are required to execute in a
@@ -298,8 +299,9 @@ pub struct DispatchInfo {
 /// it, using the `#[weight]` attribute.
 pub trait GetDispatchInfo {
 	/// Return a `DispatchInfo`, containing relevant information of this dispatch.
-	///
+	/// 返回一个`DispatchInfo`，包含本次调度的相关信息。
 	/// This is done independently of its encoded size.
+	/// 这是独立于其编码大小的。
 	fn get_dispatch_info(&self) -> DispatchInfo;
 }
 

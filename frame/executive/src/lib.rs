@@ -223,6 +223,7 @@ where
 	UnsignedValidator: ValidateUnsigned<Call = CallOf<Block::Extrinsic, Context>>,
 {
 	/// Execute all `OnRuntimeUpgrade` of this runtime, and return the aggregate weight.
+	/// 执行本次运行时所有的`OnRuntimeUpgrade`，并返回总权重。
 	pub fn execute_on_runtime_upgrade() -> frame_support::weights::Weight {
 		<(COnRuntimeUpgrade, AllPalletsWithSystem) as OnRuntimeUpgrade>::on_runtime_upgrade()
 	}
@@ -272,6 +273,7 @@ where
 	}
 
 	/// Start the execution of a particular block.
+	/// 开始执行特定块。
 	pub fn initialize_block(header: &System::Header) {
 		sp_io::init_tracing();
 		sp_tracing::enter_span!(sp_tracing::Level::TRACE, "init_block");
@@ -297,28 +299,30 @@ where
 		// Reset events before apply runtime upgrade hook.
 		// This is required to preserve events from runtime upgrade hook.
 		// This means the format of all the event related storages must always be compatible.
-		<frame_system::Pallet<System>>::reset_events();
+		// 在应用运行时升级挂钩之前重置事件。这是从运行时升级挂钩中保留事件所必需的。这意味着所有事件相关存储的格式必须始终兼容。
+		<frame_system::Pallet<System>>::reset_events();//清除事件
 
 		let mut weight = 0;
-		if Self::runtime_upgraded() {
-			weight = weight.saturating_add(Self::execute_on_runtime_upgrade());
+		if Self::runtime_upgraded() {//如果需要升级
+			weight = weight.saturating_add(Self::execute_on_runtime_upgrade());//增加升级需要的重量
 		}
-		<frame_system::Pallet<System>>::initialize(block_number, parent_hash, digest);
+		<frame_system::Pallet<System>>::initialize(block_number, parent_hash, digest);//初始化区块，设置上一个区块的信息
 		weight = weight.saturating_add(<AllPalletsWithSystem as OnInitialize<
 			System::BlockNumber,
-		>>::on_initialize(*block_number));
+		>>::on_initialize(*block_number));//初始化为0
 		weight = weight.saturating_add(
-			<System::BlockWeights as frame_support::traits::Get<_>>::get().base_block,
+			<System::BlockWeights as frame_support::traits::Get<_>>::get().base_block,//执行区块需要的基础重量
 		);
-		<frame_system::Pallet<System>>::register_extra_weight_unchecked(
+		<frame_system::Pallet<System>>::register_extra_weight_unchecked(//添加额外的重量到重量
 			weight,
 			DispatchClass::Mandatory,
 		);
 
-		frame_system::Pallet::<System>::note_finished_initialize();
+		frame_system::Pallet::<System>::note_finished_initialize();//更改状态为应用交易
 	}
 
 	/// Returns if the runtime was upgraded since the last time this function was called.
+	/// 如果自上次调用此函数以来运行时已升级，则返回。
 	fn runtime_upgraded() -> bool {
 		let last = frame_system::LastRuntimeUpgrade::<System>::get();
 		let current = <System::Version as frame_support::traits::Get<_>>::get();
@@ -344,93 +348,98 @@ where
 				<frame_system::Pallet<System>>::block_hash(n - System::BlockNumber::one()) ==
 					*header.parent_hash(),
 			"Parent hash should be valid.",
-		);
+		);//确保父区块hash跟之前（initialize_block_impl）写入的一样
 
-		if let Err(i) = System::ensure_inherents_are_first(block) {
+		if let Err(i) = System::ensure_inherents_are_first(block) {//固有信息必须在其他类型的消息之前
 			panic!("Invalid inherent position for extrinsic at index {}", i);
 		}
 	}
 
 	/// Actually execute all transitions for `block`.
+	/// 实际执行 `block` 的所有转换。
 	pub fn execute_block(block: Block) {
 		sp_io::init_tracing();
 		sp_tracing::within_span! {
 			sp_tracing::info_span!("execute_block", ?block);
 
-			Self::initialize_block(block.header());
+			Self::initialize_block(block.header());//初始化
 
 			// any initial checks
-			Self::initial_checks(&block);
+			Self::initial_checks(&block);//初始化检查
 
-			let signature_batching = sp_runtime::SignatureBatching::start();
+			let signature_batching = sp_runtime::SignatureBatching::start();//开始一个批处理签名验证
 
 			// execute extrinsics
-			let (header, extrinsics) = block.deconstruct();
+			// 执行交易
+			let (header, extrinsics) = block.deconstruct();//切分出区块头和交易
 			Self::execute_extrinsics_with_book_keeping(extrinsics, *header.number());
 
-			if !signature_batching.verify() {
+			if !signature_batching.verify() {//验证失败？
 				panic!("Signature verification failed.");
 			}
 
 			// any final checks
-			Self::final_checks(&header);
+			Self::final_checks(&header);//执行最后的检查
 		}
 	}
 
 	/// Execute given extrinsics and take care of post-extrinsics book-keeping.
+	/// 执行给定的外部事务并处理外部事务后的簿记。
 	fn execute_extrinsics_with_book_keeping(
 		extrinsics: Vec<Block::Extrinsic>,
 		block_number: NumberFor<Block>,
 	) {
-		extrinsics.into_iter().for_each(|e| {
-			if let Err(e) = Self::apply_extrinsic(e) {
+		extrinsics.into_iter().for_each(|e| {//挨个执行交易
+			if let Err(e) = Self::apply_extrinsic(e) {//执行，记录执行到的最后一个交易index
 				let err: &'static str = e.into();
 				panic!("{}", err)
 			}
 		});
 
 		// post-extrinsics book-keeping
-		<frame_system::Pallet<System>>::note_finished_extrinsics();
+		<frame_system::Pallet<System>>::note_finished_extrinsics();//设置区块处理状态
 
-		Self::idle_and_finalize_hook(block_number);
+		Self::idle_and_finalize_hook(block_number);//处理剩下的重量以及最终确认块
 	}
 
 	/// Finalize the block - it is up the caller to ensure that all header fields are valid
 	/// except state-root.
+	/// 完成块 - 由调用者来确保除 state-root 之外的所有标头字段都是有效的。
 	pub fn finalize_block() -> System::Header {
 		sp_io::init_tracing();
 		sp_tracing::enter_span!(sp_tracing::Level::TRACE, "finalize_block");
-		<frame_system::Pallet<System>>::note_finished_extrinsics();
-		let block_number = <frame_system::Pallet<System>>::block_number();
+		<frame_system::Pallet<System>>::note_finished_extrinsics();//设置区块处理状态
+		let block_number = <frame_system::Pallet<System>>::block_number();//获取区块号
 
-		Self::idle_and_finalize_hook(block_number);
+		Self::idle_and_finalize_hook(block_number);// 处理剩下的重量以及最终确认块
 
-		<frame_system::Pallet<System>>::finalize()
+		<frame_system::Pallet<System>>::finalize()//最终确认区块
 	}
 
 	fn idle_and_finalize_hook(block_number: NumberFor<Block>) {
-		let weight = <frame_system::Pallet<System>>::block_weight();
-		let max_weight = <System::BlockWeights as frame_support::traits::Get<_>>::get().max_block;
-		let remaining_weight = max_weight.saturating_sub(weight.total());
+		let weight = <frame_system::Pallet<System>>::block_weight();//当前区块重量
+		let max_weight = <System::BlockWeights as frame_support::traits::Get<_>>::get().max_block;//区块最大重量
+		let remaining_weight = max_weight.saturating_sub(weight.total());//剩下的可用重量
 
 		if remaining_weight > 0 {
-			let used_weight = <AllPalletsWithSystem as OnIdle<System::BlockNumber>>::on_idle(
+			let used_weight = <AllPalletsWithSystem as OnIdle<System::BlockNumber>>::on_idle(//防止有剩余重量发生
 				block_number,
 				remaining_weight,
 			);
-			<frame_system::Pallet<System>>::register_extra_weight_unchecked(
+			<frame_system::Pallet<System>>::register_extra_weight_unchecked(//额外检查用掉的重量
 				used_weight,
 				DispatchClass::Mandatory,
 			);
 		}
 
-		<AllPalletsWithSystem as OnFinalize<System::BlockNumber>>::on_finalize(block_number);
+		<AllPalletsWithSystem as OnFinalize<System::BlockNumber>>::on_finalize(block_number);//最终确认块
 	}
 
 	/// Apply extrinsic outside of the block execution function.
-	///
+	/// 在块执行功能之外应用交易。
 	/// This doesn't attempt to validate anything regarding the block, but it builds a list of uxt
 	/// hashes.
+	/// 这不会尝试验证有关该块的任何内容，但它会构建一个 uxt 哈希列表。
 	pub fn apply_extrinsic(uxt: Block::Extrinsic) -> ApplyExtrinsicResult {
 		sp_io::init_tracing();
 		let encoded = uxt.encode();
@@ -439,6 +448,7 @@ where
 	}
 
 	/// Actually apply an extrinsic given its `encoded_len`; this doesn't note its hash.
+	/// 实际上应用一个外部给定的`encoded_len`；这没有注意到它的哈希值。
 	fn apply_extrinsic_with_len(
 		uxt: Block::Extrinsic,
 		encoded_len: usize,
@@ -447,20 +457,23 @@ where
 		sp_tracing::enter_span!(sp_tracing::info_span!("apply_extrinsic",
 				ext=?sp_core::hexdisplay::HexDisplay::from(&uxt.encode())));
 		// Verify that the signature is good.
-		let xt = uxt.check(&Default::default())?;
+		let xt = uxt.check(&Default::default())?;//检查签名是否正确
 
 		// We don't need to make sure to `note_extrinsic` only after we know it's going to be
 		// executed to prevent it from leaking in storage since at this point, it will either
 		// execute or panic (and revert storage changes).
+		// 只有在我们知道它将被执行以防止它在存储中泄漏时，我们才需要确保 `note_extrinsic`，
+		// 因为此时，它将执行或恐慌（并恢复存储更改）。
 		<frame_system::Pallet<System>>::note_extrinsic(to_note);
 
 		// AUDIT: Under no circumstances may this function panic from here onwards.
 
 		// Decode parameters and dispatch
+		// 解码参数和调度
 		let dispatch_info = xt.get_dispatch_info();
 		let r = Applyable::apply::<UnsignedValidator>(xt, &dispatch_info, encoded_len)?;
 
-		<frame_system::Pallet<System>>::note_applied_extrinsic(&r, dispatch_info);
+		<frame_system::Pallet<System>>::note_applied_extrinsic(&r, dispatch_info);//记录执行交易信息
 
 		Ok(r.map(|_| ()).map_err(|e| e.error))
 	}
@@ -468,7 +481,7 @@ where
 	fn final_checks(header: &System::Header) {
 		sp_tracing::enter_span!(sp_tracing::Level::TRACE, "final_checks");
 		// remove temporaries
-		let new_header = <frame_system::Pallet<System>>::finalize();
+		let new_header = <frame_system::Pallet<System>>::finalize();//移除一些环境因素，应用区块
 
 		// check digest
 		assert_eq!(
@@ -496,8 +509,9 @@ where
 	/// Check a given signed transaction for validity. This doesn't execute any
 	/// side-effects; it merely checks whether the transaction would panic if it were included or
 	/// not.
-	///
+	/// 检查给定签名交易的有效性。这不会执行任何副作用；它只是检查如果交易被包含或不包含，它是否会恐慌。
 	/// Changes made to storage should be discarded.
+	/// 应放弃对存储所做的更改。
 	pub fn validate_transaction(
 		source: TransactionSource,
 		uxt: Block::Extrinsic,
@@ -506,7 +520,7 @@ where
 		sp_io::init_tracing();
 		use sp_tracing::{enter_span, within_span};
 
-		<frame_system::Pallet<System>>::initialize(
+		<frame_system::Pallet<System>>::initialize(//验证交易，这里区块号+1了，目前猜测是因为检查的是没有打包的交易
 			&(frame_system::Pallet::<System>::block_number() + One::one()),
 			&block_hash,
 			&Default::default(),
@@ -533,11 +547,13 @@ where
 	}
 
 	/// Start an offchain worker and generate extrinsics.
+	/// 启动一个离线工作者并生成外在变量。
 	pub fn offchain_worker(header: &System::Header) {
 		sp_io::init_tracing();
 		// We need to keep events available for offchain workers,
 		// hence we initialize the block manually.
 		// OffchainWorker RuntimeApi should skip initialization.
+		// 我们需要为链下工作人员提供可用的事件，因此我们手动初始化块。 OffchainWorker RuntimeApi 应该跳过初始化。
 		let digests = header.digest().clone();
 
 		<frame_system::Pallet<System>>::initialize(header.number(), header.parent_hash(), &digests);
@@ -545,6 +561,7 @@ where
 		// Frame system only inserts the parent hash into the block hashes as normally we don't know
 		// the hash for the header before. However, here we are aware of the hash and we can add it
 		// as well.
+		// Frame系统仅将父散列插入块散列中，因为通常我们以前不知道标头的散列。但是，在这里我们知道哈希，我们也可以添加它。
 		frame_system::BlockHash::<System>::insert(header.number(), header.hash());
 
 		<AllPalletsWithSystem as OffchainWorker<System::BlockNumber>>::offchain_worker(

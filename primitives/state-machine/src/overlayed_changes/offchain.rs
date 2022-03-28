@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Overlayed changes for offchain indexing.
+//! 链下索引的叠加更改。
 
 use super::changeset::OverlayedMap;
 use sp_core::offchain::OffchainOverlayedChange;
@@ -23,16 +24,19 @@ use sp_std::prelude::Vec;
 
 /// In-memory storage for offchain workers recoding changes for the actual offchain storage
 /// implementation.
+/// 用于链下工作人员的内存存储，用于记录实际链下存储实现的更改。
 #[derive(Debug, Clone, Default)]
 pub struct OffchainOverlayedChanges(OverlayedMap<(Vec<u8>, Vec<u8>), OffchainOverlayedChange>);
 
 /// Item for iterating over offchain changes.
-///
+/// 用于迭代链下更改的项目。
 /// First element i a tuple of `(prefix, key)`, second element ist the actual change
 /// (remove or set value).
+/// 第一个元素是 `(prefix, key)` 的元组，第二个元素是实际更改（删除或设置值）。
 type OffchainOverlayedChangesItem<'i> = (&'i (Vec<u8>, Vec<u8>), &'i OffchainOverlayedChange);
 
 /// Iterator over offchain changes, owned memory version.
+/// 链下更改的迭代器，拥有的内存版本。
 type OffchainOverlayedChangesItemOwned = ((Vec<u8>, Vec<u8>), OffchainOverlayedChange);
 
 impl OffchainOverlayedChanges {
@@ -47,6 +51,7 @@ impl OffchainOverlayedChanges {
 	}
 
 	/// Drain all elements of changeset.
+	/// 排空变更集的所有元素
 	pub fn drain(&mut self) -> impl Iterator<Item = OffchainOverlayedChangesItemOwned> {
 		sp_std::mem::take(self).into_iter()
 	}

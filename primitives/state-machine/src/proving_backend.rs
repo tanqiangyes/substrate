@@ -16,6 +16,7 @@
 // limitations under the License.
 
 //! Proving state machine backend.
+//! 证明状态
 
 use crate::{
 	trie_backend::TrieBackend,
@@ -38,6 +39,7 @@ use std::{
 };
 
 /// Patricia trie-based backend specialized in get value proofs.
+/// 基于Patricia树的后端，专门用于获取价值证明。
 pub struct ProvingBackendRecorder<'a, S: 'a + TrieBackendStorage<H>, H: 'a + Hasher> {
 	pub(crate) backend: &'a TrieBackendEssence<S, H>,
 	pub(crate) proof_recorder: &'a mut Recorder<H::Out>,
@@ -121,6 +123,7 @@ struct ProofRecorderInner<Hash> {
 }
 
 /// Global proof recorder, act as a layer over a hash db for recording queried data.
+/// 全局证明记录器，作为哈希数据库上的一层，用于记录查询的数据。
 #[derive(Clone, Default)]
 pub struct ProofRecorder<Hash> {
 	inner: Arc<RwLock<ProofRecorderInner<Hash>>>,
@@ -148,7 +151,7 @@ impl<Hash: std::hash::Hash + Eq> ProofRecorder<Hash> {
 	}
 
 	/// Returns the estimated encoded size of the proof.
-	///
+	/// 返回证明的估计编码大小。
 	/// The estimation is maybe bigger (by in maximum 4 bytes), but never smaller than the actual
 	/// encoded proof.
 	pub fn estimate_encoded_size(&self) -> usize {
@@ -177,6 +180,7 @@ impl<Hash: std::hash::Hash + Eq> ProofRecorder<Hash> {
 
 /// Patricia trie-based backend which also tracks all touched storage trie values.
 /// These can be sent to remote node and used as a proof of execution.
+/// Patricia trie-based backend，它也跟踪所有触及的存储trie值。这些可以被发送到远程节点并作为执行证明。
 pub struct ProvingBackend<'a, S: 'a + TrieBackendStorage<H>, H: 'a + Hasher>(
 	TrieBackend<ProofRecorderBackend<'a, S, H>, H>,
 );

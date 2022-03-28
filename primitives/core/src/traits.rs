@@ -32,6 +32,7 @@ pub trait CodeExecutor: Sized + Send + Sync + ReadRuntimeVersion + Clone + 'stat
 
 	/// Call a given method in the runtime. Returns a tuple of the result (either the output data
 	/// or an execution error) together with a `bool`, which is true if native execution was used.
+	/// 在运行时调用一个给定的方法。返回一个结果的元组（要么是输出数据，要么是执行错误）和一个bool，如果使用了本地执行，则为真。
 	fn call<
 		R: codec::Codec + PartialEq,
 		NC: FnOnce() -> Result<R, Box<dyn std::error::Error + Send + Sync>> + UnwindSafe,
@@ -73,6 +74,7 @@ impl FetchRuntimeCode for NoneFetchRuntimeCode {
 }
 
 /// The Wasm code of a Substrate runtime.
+/// Substrate 运行时的 Wasm 代码。
 #[derive(Clone)]
 pub struct RuntimeCode<'a> {
 	/// The code fetcher that can be used to lazily fetch the code.
@@ -120,6 +122,7 @@ impl std::fmt::Display for CodeNotFound {
 }
 
 /// A trait that allows reading version information from the binary.
+/// 允许从二进制文件中读取版本信息的特征。
 pub trait ReadRuntimeVersion: Send + Sync {
 	/// Reads the runtime version information from the given wasm code.
 	///
@@ -172,6 +175,7 @@ impl TaskExecutorExt {
 }
 
 /// Runtime spawn extension.
+/// 运行时生成扩展。
 pub trait RuntimeSpawn: Send {
 	/// Create new runtime instance and use dynamic dispatch to invoke with specified payload.
 	///
@@ -192,6 +196,7 @@ sp_externalities::decl_extension! {
 
 /// Something that can spawn tasks (blocking and non-blocking) with an assigned name
 /// and optional group.
+/// 可以产生具有指定名称和可选组的任务（阻塞和非阻塞）的东西。
 #[dyn_clonable::clonable]
 pub trait SpawnNamed: Clone + Send + Sync {
 	/// Spawn the given blocking future.
@@ -235,8 +240,9 @@ impl SpawnNamed for Box<dyn SpawnNamed> {
 
 /// Something that can spawn essential tasks (blocking and non-blocking) with an assigned name
 /// and optional group.
-///
+/// 可以产生具有指定名称和可选组的基本任务（阻塞和非阻塞）的东西。
 /// Essential tasks are special tasks that should take down the node when they end.
+/// 基本任务是在结束时应该关闭节点的特殊任务。
 #[dyn_clonable::clonable]
 pub trait SpawnEssentialNamed: Clone + Send + Sync {
 	/// Spawn the given blocking future.

@@ -22,12 +22,12 @@ use sp_arithmetic::traits::Saturating;
 use sp_runtime::traits::AtLeast32BitUnsigned;
 
 /// The block initialization trait.
-///
+/// 块初始化特征。
 /// Implementing this lets you express what should happen for your pallet when the block is
 /// beginning (right before the first extrinsic is executed).
 pub trait OnInitialize<BlockNumber> {
 	/// The block is being initialized. Implement to have something happen.
-	///
+	/// 这个块被初始化，等待某些事情发生
 	/// Return the non-negotiable weight consumed in the block.
 	///
 	/// NOTE: This function is called BEFORE ANY extrinsic in a block is applied,
@@ -53,7 +53,7 @@ impl<BlockNumber: Clone> OnInitialize<BlockNumber> for Tuple {
 #[impl_for_tuples(30)]
 pub trait OnFinalize<BlockNumber> {
 	/// The block is being finalized. Implement to have something happen.
-	///
+	/// 该块正在最终确定。实施以使某些事情发生。
 	/// NOTE: This function is called AFTER ALL extrinsics in a block are applied,
 	/// including inherent extrinsics.
 	fn on_finalize(_n: BlockNumber) {}
@@ -68,7 +68,7 @@ pub trait OnIdle<BlockNumber> {
 	/// Implement to have something happen in case there is leftover weight.
 	/// Check the passed `remaining_weight` to make sure it is high enough to allow for
 	/// your pallet's extra computation.
-	///
+	/// 该块正在最终确定。实施以防有剩余重量发生。检查传递的 `remaining_weight` 以确保它足够高以允许您的托盘进行额外计算。
 	/// NOTE: This function is called AFTER ALL extrinsics - including inherent extrinsics -
 	/// in a block are applied but before `on_finalize` is executed.
 	fn on_idle(

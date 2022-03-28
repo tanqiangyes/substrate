@@ -41,26 +41,32 @@ type Transactions<V> = SmallVec<[InnerValue<V>; 5]>;
 
 /// Error returned when trying to commit or rollback while no transaction is open or
 /// when the runtime is trying to close a transaction started by the client.
+/// 在没有打开事务或运行时尝试关闭客户端启动的事务时尝试提交或回滚时返回错误。
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct NoOpenTransaction;
 
 /// Error when calling `enter_runtime` when already being in runtime execution mode.
+/// 已处于运行时执行模式时调用“enter_runtime”时出错。
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct AlreadyInRuntime;
 
 /// Error when calling `exit_runtime` when not being in runtime exection mdde.
+/// 不在运行时执行 mdde 时调用“exit_runtime”时出错。
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct NotInRuntime;
 
 /// Describes in which mode the node is currently executing.
+/// 描述节点当前正在执行的模式
 #[derive(Debug, Clone, Copy)]
 pub enum ExecutionMode {
 	/// Exeuting in client mode: Removal of all transactions possible.
+	/// 以客户端模式执行：删除所有可能的事务。
 	Client,
 	/// Executing in runtime mode: Transactions started by the client are protected.
+	/// 在运行时模式下执行：由客户端启动的事务受到保护。
 	Runtime,
 }
 
@@ -68,17 +74,21 @@ pub enum ExecutionMode {
 #[cfg_attr(test, derive(PartialEq))]
 struct InnerValue<V> {
 	/// Current value. None if value has been deleted.
+	/// 当前值。如果当前值被删除则为None
 	value: V,
 	/// The set of extrinsic indices where the values has been changed.
+	/// 值已更改的外部索引集。
 	extrinsics: Extrinsics,
 }
 
 /// An overlay that contains all versions of a value for a specific key.
+/// 包含特定键值的所有版本的覆盖
 #[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct OverlayedEntry<V> {
 	/// The individual versions of that value.
 	/// One entry per transactions during that the value was actually written.
+	/// 该值的各个版本。在实际写入值期间，每笔交易一个条目。
 	transactions: Transactions<V>,
 }
 
@@ -89,25 +99,33 @@ impl<V> Default for OverlayedEntry<V> {
 }
 
 /// History of value, with removal support.
+/// 价值历史，有移除支持。
 pub type OverlayedValue = OverlayedEntry<Option<StorageValue>>;
 
 /// Change set for basic key value with extrinsics index recording and removal support.
+/// 具有外部索引记录和删除支持的基本键值的更改集
 pub type OverlayedChangeSet = OverlayedMap<StorageKey, Option<StorageValue>>;
 
 /// Holds a set of changes with the ability modify them using nested transactions.
+/// 保存一组更改，并能够使用嵌套事务对其进行修改。
 #[derive(Debug, Clone)]
 pub struct OverlayedMap<K: Ord + Hash, V> {
 	/// Stores the changes that this overlay constitutes.
+	/// 存储此覆盖构成的更改。
 	changes: BTreeMap<K, OverlayedEntry<V>>,
 	/// Stores which keys are dirty per transaction. Needed in order to determine which
 	/// values to merge into the parent transaction on commit. The length of this vector
 	/// therefore determines how many nested transactions are currently open (depth).
+	/// 存储每个事务哪些键是脏的。需要以确定在提交时将哪些值合并到父事务中。
+	/// 因此，该向量的长度决定了当前打开的嵌套事务的数量（深度）。
 	dirty_keys: DirtyKeysSets<K>,
 	/// The number of how many transactions beginning from the first transactions are started
 	/// by the client. Those transactions are protected against close (commit, rollback)
 	/// when in runtime mode.
+	/// 客户端从第一笔交易开始的交易数量。在运行时模式下，这些事务受到保护，不会关闭（提交、回滚）。
 	num_client_transactions: usize,
 	/// Determines whether the node is using the overlay from the client or the runtime.
+	/// 确定节点是使用来自客户端还是运行时的覆盖。
 	execution_mode: ExecutionMode,
 }
 
@@ -130,16 +148,19 @@ impl Default for ExecutionMode {
 
 impl<V> OverlayedEntry<V> {
 	/// The value as seen by the current transaction.
+	/// 当前交易看到的价值
 	pub fn value_ref(&self) -> &V {
 		&self.transactions.last().expect(PROOF_OVERLAY_NON_EMPTY).value
 	}
 
 	/// The value as seen by the current transaction.
+	/// 当前交易看到的价值。
 	pub fn into_value(mut self) -> V {
 		self.transactions.pop().expect(PROOF_OVERLAY_NON_EMPTY).value
 	}
 
 	/// Unique list of extrinsic indices which modified the value.
+	/// 修改值的外部索引的唯一列表。
 	pub fn extrinsics(&self) -> BTreeSet<u32> {
 		let mut set = BTreeSet::new();
 		self.transactions
@@ -159,14 +180,16 @@ impl<V> OverlayedEntry<V> {
 	}
 
 	/// Mutable reference to the set which holds the indices for the **current transaction only**.
+	/// 对仅保存当前事务索引的集合的可变引用。
 	fn transaction_extrinsics_mut(&mut self) -> &mut Extrinsics {
 		&mut self.transactions.last_mut().expect(PROOF_OVERLAY_NON_EMPTY).extrinsics
 	}
 
 	/// Writes a new version of a value.
-	///
+	/// 写入值的新版本。
 	/// This makes sure that the old version is not overwritten and can be properly
 	/// rolled back when required.
+	/// 这样可以确保旧版本不会被覆盖，并且可以在需要时正确回滚。
 	fn set(&mut self, value: V, first_write_in_tx: bool, at_extrinsic: Option<u32>) {
 		if first_write_in_tx || self.transactions.is_empty() {
 			self.transactions.push(InnerValue { value, extrinsics: Default::default() });
@@ -182,24 +205,27 @@ impl<V> OverlayedEntry<V> {
 
 impl OverlayedEntry<Option<StorageValue>> {
 	/// The value as seen by the current transaction.
+	/// 当前交易看到的价值。
 	pub fn value(&self) -> Option<&StorageValue> {
 		self.value_ref().as_ref()
 	}
 }
 
 /// Inserts a key into the dirty set.
-///
+/// 将密钥插入脏集。
 /// Returns true iff we are currently have at least one open transaction and if this
 /// is the first write to the given key that transaction.
+/// 如果我们当前至少有一个打开的事务并且这是第一次写入该事务的给定键，则返回 true。
 fn insert_dirty<K: Ord + Hash>(set: &mut DirtyKeysSets<K>, key: K) -> bool {
 	set.last_mut().map(|dk| dk.insert(key)).unwrap_or_default()
 }
 
 impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 	/// Create a new changeset at the same transaction state but without any contents.
-	///
+	/// 在相同的事务状态下创建一个新的变更集，但没有任何内容。
 	/// This changeset might be created when there are already open transactions.
 	/// We need to catch up here so that the child is at the same transaction depth.
+	/// 当已经有打开的事务时，可能会创建此变更集。我们需要在这里赶上，以便孩子处于相同的事务深度。
 	pub fn spawn_child(&self) -> Self {
 		use sp_std::iter::repeat;
 		Self {
@@ -211,11 +237,13 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 	}
 
 	/// True if no changes at all are contained in the change set.
+	/// 如果更改集中根本不包含任何更改，则为真。
 	pub fn is_empty(&self) -> bool {
 		self.changes.is_empty()
 	}
 
 	/// Get an optional reference to the value stored for the specified key.
+	/// 获取对为指定键存储的值的可选引用。
 	pub fn get<Q>(&self, key: &Q) -> Option<&OverlayedEntry<V>>
 	where
 		K: sp_std::borrow::Borrow<Q>,
@@ -225,26 +253,29 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 	}
 
 	/// Set a new value for the specified key.
-	///
+	/// 为指定的键设置一个新值。
 	/// Can be rolled back or committed when called inside a transaction.
+	/// 在事务内部调用时可以回滚或提交。
 	pub fn set(&mut self, key: K, value: V, at_extrinsic: Option<u32>) {
 		let overlayed = self.changes.entry(key.clone()).or_default();
 		overlayed.set(value, insert_dirty(&mut self.dirty_keys, key), at_extrinsic);
 	}
 
 	/// Get a list of all changes as seen by current transaction.
+	/// 获取当前事务看到的所有更改的列表
 	pub fn changes(&self) -> impl Iterator<Item = (&K, &OverlayedEntry<V>)> {
 		self.changes.iter()
 	}
 
 	/// Get a list of all changes as seen by current transaction, consumes
 	/// the overlay.
+	/// 获取当前事务看到的所有更改的列表，使用覆盖。
 	pub fn into_changes(self) -> impl Iterator<Item = (K, OverlayedEntry<V>)> {
 		self.changes.into_iter()
 	}
 
 	/// Consume this changeset and return all committed changes.
-	///
+	/// 使用此变更集并返回所有已提交的更改。
 	/// Panics:
 	/// Panics if there are open transactions: `transaction_depth() > 0`
 	pub fn drain_commited(self) -> impl Iterator<Item = (K, V)> {
@@ -253,16 +284,18 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 	}
 
 	/// Returns the current nesting depth of the transaction stack.
-	///
+	/// 返回事务堆栈的当前嵌套深度。
 	/// A value of zero means that no transaction is open and changes are committed on write.
+	/// 值为零表示没有打开事务并且在写入时提交更改
 	pub fn transaction_depth(&self) -> usize {
 		self.dirty_keys.len()
 	}
 
 	/// Call this before transfering control to the runtime.
-	///
+	/// 在将控制权转移到运行时之前调用它
 	/// This protects all existing transactions from being removed by the runtime.
 	/// Calling this while already inside the runtime will return an error.
+	/// 这可以保护所有现有事务不被运行时删除。在运行时中调用它会返回一个错误。
 	pub fn enter_runtime(&mut self) -> Result<(), AlreadyInRuntime> {
 		if let ExecutionMode::Runtime = self.execution_mode {
 			return Err(AlreadyInRuntime)
@@ -273,9 +306,10 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 	}
 
 	/// Call this when control returns from the runtime.
-	///
+	/// 当控制从运行时返回时调用它。
 	/// This commits all dangling transaction left open by the runtime.
 	/// Calling this while already outside the runtime will return an error.
+	/// 这将提交运行时打开的所有悬空事务。在运行时之外调用它会返回错误。
 	pub fn exit_runtime(&mut self) -> Result<(), NotInRuntime> {
 		if let ExecutionMode::Client = self.execution_mode {
 			return Err(NotInRuntime)
@@ -295,26 +329,29 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 	}
 
 	/// Start a new nested transaction.
-	///
+	/// 开始一个新的嵌套事务。
 	/// This allows to either commit or roll back all changes that were made while this
 	/// transaction was open. Any transaction must be closed by either `commit_transaction`
 	/// or `rollback_transaction` before this overlay can be converted into storage changes.
-	///
+	/// 这允许提交或回滚在此事务打开时所做的所有更改。任何事务都必须由 `commit_transaction`
+	/// 或 `rollback_transaction` 关闭，然后才能将此覆盖转换为存储更改。
 	/// Changes made without any open transaction are committed immediately.
+	/// 在没有任何开放事务的情况下所做的修改会立即提交。
 	pub fn start_transaction(&mut self) {
 		self.dirty_keys.push(Default::default());
 	}
 
 	/// Rollback the last transaction started by `start_transaction`.
-	///
+	/// 回滚由 `start_transaction` 启动的最后一个事务。
 	/// Any changes made during that transaction are discarded. Returns an error if
 	/// there is no open transaction that can be rolled back.
+	/// 在该事务期间所做的任何更改都将被丢弃。如果没有可以回滚的打开事务，则返回错误。
 	pub fn rollback_transaction(&mut self) -> Result<(), NoOpenTransaction> {
 		self.close_transaction(true)
 	}
 
 	/// Commit the last transaction started by `start_transaction`.
-	///
+	/// 提交由 `start_transaction` 启动的最后一个事务。
 	/// Any changes made during that transaction are committed. Returns an error if
 	/// there is no open transaction that can be committed.
 	pub fn commit_transaction(&mut self) -> Result<(), NoOpenTransaction> {
@@ -323,6 +360,7 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 
 	fn close_transaction(&mut self, rollback: bool) -> Result<(), NoOpenTransaction> {
 		// runtime is not allowed to close transactions started by the client
+		// 运行时不允许关闭客户端启动的事务
 		if let ExecutionMode::Runtime = self.execution_mode {
 			if !self.has_open_runtime_transactions() {
 				return Err(NoOpenTransaction)
@@ -343,6 +381,7 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 
 				// We need to remove the key as an `OverlayValue` with no transactions
 				// violates its invariant of always having at least one transaction.
+				// 我们需要删除密钥，因为没有交易的“OverlayValue”违反了它始终拥有至少一个交易的不变性。
 				if overlayed.transactions.is_empty() {
 					self.changes.remove(&key);
 				}
@@ -359,6 +398,7 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 
 				// We only need to merge if there is an pre-existing value. It may be a value from
 				// the previous transaction or a value committed without any open transaction.
+				// 如果存在预先存在的值，我们只需要合并。它可能是来自先前事务的值，也可能是在没有任何未打开事务的情况下提交的值。
 				if has_predecessor {
 					let dropped_tx = overlayed.pop_transaction();
 					*overlayed.value_mut() = dropped_tx.value;
@@ -377,8 +417,9 @@ impl<K: Ord + Hash + Clone, V> OverlayedMap<K, V> {
 
 impl OverlayedChangeSet {
 	/// Get a mutable reference for a value.
-	///
+	/// 获取值的可变引用。
 	/// Can be rolled back or committed when called inside a transaction.
+	/// 在事务内部调用时可以回滚或提交。
 	#[must_use = "A change was registered, so this value MUST be modified."]
 	pub fn modify(
 		&mut self,
@@ -405,8 +446,9 @@ impl OverlayedChangeSet {
 	}
 
 	/// Set all values to deleted which are matched by the predicate.
-	///
+	/// 将所有与谓词匹配的值设置为已删除。
 	/// Can be rolled back or committed when called inside a transaction.
+	/// 在事务内部调用时可以回滚或提交。
 	pub fn clear_where(
 		&mut self,
 		predicate: impl Fn(&[u8], &OverlayedValue) -> bool,
@@ -418,6 +460,7 @@ impl OverlayedChangeSet {
 	}
 
 	/// Get the iterator over all changes that follow the supplied `key`.
+	/// 获取跟随提供的 `key` 的所有更改的迭代器。
 	pub fn changes_after(&self, key: &[u8]) -> impl Iterator<Item = (&[u8], &OverlayedValue)> {
 		use sp_std::ops::Bound;
 		let range = (Bound::Excluded(key), Bound::Unbounded);

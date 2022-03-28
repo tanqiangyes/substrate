@@ -31,7 +31,7 @@ use std::{
 };
 
 /// Trait for inspecting state in any backend.
-///
+/// 用于检查任何后台的状态的特质。
 /// Implemented for any backend.
 pub trait InspectState<H: Hasher, B: Backend<H>> {
 	/// Inspect state with a closure.

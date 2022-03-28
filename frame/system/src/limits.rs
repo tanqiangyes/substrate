@@ -16,43 +16,50 @@
 // limitations under the License.
 
 //! Block resource limits configuration structures.
-//!
+//! 块资源限制配置结构
 //! FRAME defines two resources that are limited within a block:
+//! 框架定义了两种限制区块的资源：重量（执行消耗/时间），长度（区块大小）
 //! - Weight (execution cost/time)
 //! - Length (block size)
 //!
 //! `frame_system` tracks consumption of each of these resources separately for each
 //! `DispatchClass`. This module contains configuration object for both resources,
 //! which should be passed to `frame_system` configuration when runtime is being set up.
+//! `frame_system`为每个`DispatchClass`分别跟踪这些资源的消耗。
+//! 这个模块包含了这两种资源的配置对象，在运行时应该传递给`frame_system`配置。
 
 use frame_support::weights::{constants, DispatchClass, OneOrMany, PerDispatchClass, Weight};
 use scale_info::TypeInfo;
 use sp_runtime::{Perbill, RuntimeDebug};
 
 /// Block length limit configuration.
+/// 区块长度限制配置
 #[derive(RuntimeDebug, Clone, codec::Encode, codec::Decode, TypeInfo)]
 pub struct BlockLength {
 	/// Maximal total length in bytes for each extrinsic class.
-	///
+	/// 每个外部类的最大总长度（以字节为单位）。
 	/// In the worst case, the total block length is going to be:
 	/// `MAX(max)`
+	/// 在最坏的情况下，总块长度将是：`MAX(max)`
 	pub max: PerDispatchClass<u32>,
 }
 
 impl Default for BlockLength {
 	fn default() -> Self {
 		BlockLength::max_with_normal_ratio(5 * 1024 * 1024, DEFAULT_NORMAL_RATIO)
-	}
+	}//默认区块大小5M
 }
 
 impl BlockLength {
 	/// Create new `BlockLength` with `max` for every class.
+	/// 为每个类创建带有 `max` 的新 `BlockLength`。
 	pub fn max(max: u32) -> Self {
 		Self { max: PerDispatchClass::new(|_| max) }
 	}
 
 	/// Create new `BlockLength` with `max` for `Operational` & `Mandatory`
 	/// and `normal * max` for `Normal`.
+	/// 使用 `max` 为 `Operational` 和 `Mandatory` 创建新的 `BlockLength` 和 `normal max` 为 `Normal`。
 	pub fn max_with_normal_ratio(max: u32, normal: Perbill) -> Self {
 		Self {
 			max: PerDispatchClass::new(|class| {
@@ -84,14 +91,18 @@ macro_rules! error_assert {
 }
 
 /// A result of validating `BlockWeights` correctness.
+/// 验证 `BlockWeights` 正确性的结果。
 pub type ValidationResult = Result<BlockWeights, ValidationErrors>;
 
 /// A ratio of `Normal` dispatch class within block, used as default value for
 /// `BlockWeight` and `BlockLength`. The `Default` impls are provided mostly for convenience
 /// to use in tests.
+/// 块内 `Normal` 调度类的比率，用作 `BlockWeight` 和 `BlockLength` 的默认值。
+/// `Default` 实现主要是为了方便在测试中使用而提供的。
 const DEFAULT_NORMAL_RATIO: Perbill = Perbill::from_percent(75);
 
 /// `DispatchClass`-specific weight configuration.
+/// `DispatchClass`-特定的权重配置。
 #[derive(RuntimeDebug, Clone, codec::Encode, codec::Decode, TypeInfo)]
 pub struct WeightsPerClass {
 	/// Base weight of single extrinsic of given class.
